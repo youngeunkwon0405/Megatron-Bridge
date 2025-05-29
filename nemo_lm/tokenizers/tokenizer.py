@@ -10,10 +10,10 @@ from typing import Dict, List, Optional
 
 from megatron.core.datasets.megatron_tokenizer import MegatronTokenizer as MegatronTokenizerCore
 
-from nemo_lm.config import TokenizerConfig
 from nemo_lm.tokenizers.bert_tokenization import FullTokenizer as FullBertTokenizer
 from nemo_lm.tokenizers.gpt2_tokenization import GPT2Tokenizer
 from nemo_lm.tokenizers.multimodal_tokenizer import MultimodalTokenizer
+from nemo_lm.training.config import TokenizerConfig
 from nemo_lm.utils.common_utils import get_rank_safe, print_rank_0
 
 
@@ -684,7 +684,6 @@ class _GPTSentencePieceTokenizer(_SentencePieceTokenizer):
     token handling. It primarily uses the BOS, EOS, and PAD IDs defined by the
     SentencePiece model itself, without adding extra tokens like <CLS>, <SEP>, etc.
     The `eod` (end-of-document) token is mapped to the `eos_id`.
-
     Args:
         model_file (str): Path to the SentencePiece model file.
     """
@@ -735,11 +734,9 @@ class _GPTSentencePieceTokenizer(_SentencePieceTokenizer):
 
 class _Llama2Tokenizer(_SentencePieceTokenizer):
     """A tokenizer specifically for Llama-2 style models, using SentencePiece.
-
     This class inherits from `_SentencePieceTokenizer` and is configured for Llama-2's
     specific use of BOS and EOS tokens. It uses the BOS/EOS/PAD IDs directly from
     the SentencePiece model.
-
     Args:
         model_file (str): Path to the SentencePiece model file for Llama-2.
     """
@@ -755,12 +752,10 @@ class _Llama2Tokenizer(_SentencePieceTokenizer):
 
     def tokenize(self, s: str, bos=True, eos=False):
         """Tokenizes a string, with options to add BOS and EOS tokens.
-
         Args:
             s (str): The input string to tokenize.
             bos (bool, optional): Whether to prepend the BOS token. Defaults to True.
             eos (bool, optional): Whether to append the EOS token. Defaults to False.
-
         Returns:
             list[int]: A list of token IDs.
         """
@@ -806,15 +801,12 @@ def reload_mergeable_ranks(path: str, max_vocab: Optional[int] = None) -> Dict[b
     """
     Reloads a tokenizer vocabulary from a JSON file (NeMo format) and converts it
     into the mergeable ranks format required by Tiktoken.
-
     The input JSON file is expected to be a list of dictionaries, each with
     "rank", "token_bytes" (base64 encoded), and "token_str" keys.
-
     Args:
         path (str): Path to the JSON vocabulary file.
         max_vocab (Optional[int], optional): If provided, truncates the vocabulary
                                            to this maximum size. Defaults to None.
-
     Returns:
         Dict[bytes, int]: A dictionary mapping token bytes to their ranks.
     """
@@ -851,12 +843,10 @@ PATTERN_TIKTOKEN_V2 = "[^\\r\\n\\p{L}\\p{N}]?[\\p{Lu}\\p{Lt}\\p{Lm}\\p{Lo}\\p{M}
 
 class CustomTikTokenizer(MegatronTokenizer):
     """A custom tokenizer using the Tiktoken library with a NeMo-style vocabulary file.
-
     This tokenizer loads a vocabulary from a JSON file (processed by
     `reload_mergeable_ranks`) and uses it with Tiktoken for encoding and decoding.
     It supports a configurable number of special tokens, which are placed at the
     beginning of the vocabulary ID space.
-
     Args:
         path (str): Path to the JSON vocabulary file (NeMo format).
         pattern (str): The regex pattern string for Tiktoken.
@@ -962,12 +952,10 @@ class CustomTikTokenizer(MegatronTokenizer):
 
     def tokenize(self, s: str, bos: bool = False, eos: bool = False) -> List[int]:
         """Tokenizes a string, with options to add BOS and EOS tokens.
-
         Args:
             s (str): The input string to tokenize.
             bos (bool, optional): Whether to prepend the BOS token. Defaults to False.
             eos (bool, optional): Whether to append the EOS token. Defaults to False.
-
         Returns:
             List[int]: A list of token IDs.
         """
@@ -1005,11 +993,9 @@ class CustomTikTokenizer(MegatronTokenizer):
 
 class _NullTokenizer(MegatronTokenizer):
     """A simple tokenizer that splits text by spaces and converts tokens to integers.
-
     This tokenizer is primarily for testing or placeholder purposes where actual
     linguistic tokenization is not required. It assumes tokens are space-separated
     integers.
-
     Args:
         vocab_size (int): The vocabulary size, excluding the EOD token.
                           The EOD token will be assigned `vocab_size` as its ID.

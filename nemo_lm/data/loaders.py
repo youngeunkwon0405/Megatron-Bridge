@@ -21,9 +21,9 @@ from megatron.core.datasets.utils import get_blend_from_list
 from megatron.core.rerun_state_machine import RerunDataIterator
 from torch.utils.data import DataLoader
 
-from nemo_lm.config import ConfigContainer
 from nemo_lm.data.samplers import build_pretraining_data_loader
-from nemo_lm.state import TrainState
+from nemo_lm.training.config import ConfigContainer
+from nemo_lm.training.state import TrainState
 from nemo_lm.utils.common_utils import print_rank_0
 from nemo_lm.utils.sig_utils import DistributedSignalHandler
 
