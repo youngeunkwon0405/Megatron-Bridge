@@ -45,7 +45,7 @@ from megatron.core.num_microbatches_calculator import update_num_microbatches
 from megatron.core.rerun_state_machine import get_rerun_state_machine
 
 from nemo_lm.training import fault_tolerance
-from nemo_lm.training.config import ConfigContainer
+from nemo_lm.training.config import CheckpointConfig, ConfigContainer
 from nemo_lm.training.state import GlobalState, TrainState
 from nemo_lm.utils import wandb_utils
 from nemo_lm.utils.async_utils import is_empty_async_queue, schedule_async_save
@@ -57,7 +57,10 @@ from nemo_lm.utils.common_utils import (
     unwrap_model,
     use_dist_ckpt,
 )
+from nemo_lm.utils.import_utils import safe_import
 from nemo_lm.utils.log_utils import append_to_progress_log
+
+_, HAVE_RESIL = safe_import("nvidia_resiliency_ext.checkpointing")
 
 # [ModelOpt]: Import
 try:
@@ -1295,6 +1298,54 @@ def load_checkpoint(
         fault_tolerance.on_checkpoint_loaded(is_local_chkpt=is_local_chkpt, global_state=state)
 
     return state.train_state.step, state.train_state.floating_point_operations_so_far
+
+
+def init_checkpointing_context(checkpoint_config: CheckpointConfig) -> dict[str, Any]:
+    """Initialize the checkpointing context, primarily for local checkpointing support.
+
+    If `non_persistent_ckpt_type` is set to "local", this function sets up
+    the `LocalCheckpointManager` and replication strategy based on the provided
+    `checkpoint_config`.
+
+    Args:
+        checkpoint_config: The checkpoint configuration object.
+
+    Returns:
+        A dictionary containing the checkpointing context. This will include
+        a `local_checkpoint_manager` if local checkpointing is enabled,
+        otherwise it will be an empty dictionary.
+
+    Raises:
+        RuntimeError: If local checkpointing is configured but the
+                      `nvidia_resiliency_ext` module is not found.
+    """
+    if checkpoint_config.non_persistent_ckpt_type != "local":
+        return {}
+
+    if not HAVE_RESIL:
+        raise RuntimeError(
+            "The 'nvidia_resiliency_ext' module is required for local "
+            "checkpointing but was not found. Please ensure it is installed."
+        )
+
+    from nvidia_resiliency_ext.checkpointing.local.ckpt_managers.local_manager import LocalCheckpointManager
+    from nvidia_resiliency_ext.checkpointing.local.replication.strategies import CliqueReplicationStrategy
+
+    if checkpoint_config.replication:
+        repl_strategy = CliqueReplicationStrategy.from_replication_params(
+            checkpoint_config.replication_jump,
+            checkpoint_config.replication_factor,
+        )
+    else:
+        repl_strategy = None
+
+    checkpointing_context = {
+        "local_checkpoint_manager": LocalCheckpointManager(
+            checkpoint_config.non_persistent_local_ckpt_dir,
+            repl_strategy=repl_strategy,
+        )
+    }
+    return checkpointing_context
 
 
 def fix_fp8_params_lose_precision_when_loading_dist_ckpt(state_dict: dict[str, Any]) -> None:
