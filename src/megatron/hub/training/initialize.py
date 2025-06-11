@@ -173,7 +173,6 @@ def torch_dist_init(
         finish_mpu_init()
 
         _compile_dataset_helpers()
-
         if model_config.tp_comm_overlap:
             _initialize_tp_communicators(model_config, micro_batch_size)
 
