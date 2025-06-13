@@ -94,6 +94,13 @@ override-dependencies = [
 requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project.optional-dependencies]
+eval = [
+    "nvidia-lm-eval",
+    "uvicorn",
+    "pytest-httpserver"
+]
+
 [dependency-groups]
 docs = [
     "myst-parser>=4.0.1",
