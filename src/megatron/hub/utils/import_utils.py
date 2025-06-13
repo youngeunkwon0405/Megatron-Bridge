@@ -20,6 +20,7 @@ import importlib
 import logging
 import traceback
 from contextlib import contextmanager
+from typing import Tuple
 
 import torch
 from packaging.version import Version as PkgVersion
@@ -248,29 +249,24 @@ class UnavailableNullContext:
         pass
 
 
-def safe_import(module, *, msg=None, alt=None):
-    """A function used to import modules that may not be available
+def safe_import(module, *, msg=None, alt=None) -> Tuple[object, bool]:
+    """A function used to import modules that may not be available.
 
     This function will attempt to import a module with the given name, but it
     will not throw an ImportError if the module is not found. Instead, it will
     return a placeholder object which will raise an exception only if used.
 
-    Parameters
-    ----------
-    module: str
-        The name of the module to import.
-    msg: str or None
-        An optional error message to be displayed if this module is used
-        after a failed import.
-    alt: object
-        An optional module to be used in place of the given module if it
-        fails to import
+    Args:
+        module (str): The name of the module to import.
+        msg (str, optional): An error message to be displayed if this module is used
+            after a failed import. Defaults to None.
+        alt (object, optional): A module to be used in place of the given module if it
+            fails to import. Defaults to None.
 
-    Returns
-    -------
-    Tuple(object, bool)
-        The imported module, the given alternate, or a class derived from
-        UnavailableMeta, and a boolean indicating whether the intended import was successful.
+    Returns:
+        tuple: A tuple containing two elements. The first element is the imported module,
+        the given alternate, or a class derived from UnavailableMeta. The second element
+        is a boolean indicating whether the intended import was successful.
     """
     try:
         return importlib.import_module(module), True
@@ -288,35 +284,29 @@ def safe_import(module, *, msg=None, alt=None):
         return alt, False
 
 
-def safe_import_from(module, symbol, *, msg=None, alt=None, fallback_module=None):
-    """A function used to import symbols from modules that may not be available
+def safe_import_from(module, symbol, *, msg=None, alt=None, fallback_module=None) -> Tuple[object, bool]:
+    """A function used to import symbols from modules that may not be available.
 
     This function will attempt to import a symbol with the given name from
     the given module, but it will not throw an ImportError if the symbol is not
     found. Instead, it will return a placeholder object which will raise an
     exception only if used.
 
-    Parameters
-    ----------
-    module: str
-        The name of the module in which the symbol is defined.
-    symbol: str
-        The name of the symbol to import.
-    msg: str or None
-        An optional error message to be displayed if this symbol is used
-        after a failed import.
-    alt: object
-        An optional object to be used in place of the given symbol if it fails
-        to import
-    fallback_module: str
-        Alternative name of the model in which the symbol is defined. The function will first to
-        import using the `module` value and if that fails will also try the `fallback_module`.
+    Args:
+        module (str): The name of the module in which the symbol is defined.
+        symbol (str): The name of the symbol to import.
+        msg (str, optional): An error message to be displayed if this symbol is used
+            after a failed import. Defaults to None.
+        alt (object, optional): An object to be used in place of the given symbol if it fails
+            to import. Defaults to None.
+        fallback_module (str, optional): Alternative name of the model in which the symbol is defined.
+            The function will first try to import using the `module` value and if that fails
+            will also try the `fallback_module`. Defaults to None.
 
-    Returns
-    -------
-    Tuple(object, bool)
-        The imported symbol, the given alternate, or a class derived from
-        UnavailableMeta, and a boolean indicating whether the intended import was successful.
+    Returns:
+        tuple: A tuple containing two elements. The first element is the imported symbol,
+        the given alternate, or a class derived from UnavailableMeta. The second element
+        is a boolean indicating whether the intended import was successful.
     """
     try:
         imported_module = importlib.import_module(module)
@@ -341,8 +331,8 @@ def safe_import_from(module, symbol, *, msg=None, alt=None, fallback_module=None
         return alt, False
 
 
-def gpu_only_import(module, *, alt=None):
-    """A function used to import modules required only in GPU installs
+def gpu_only_import(module, *, alt=None) -> Tuple[object, bool]:
+    """A function used to import modules required only in GPU installs.
 
     This function will attempt to import a module with the given name.
     This function will attempt to import a symbol with the given name from
@@ -350,19 +340,15 @@ def gpu_only_import(module, *, alt=None):
     found. Instead, it will return a placeholder object which will raise an
     exception only if used with instructions on installing a GPU build.
 
-    Parameters
-    ----------
-    module: str
-        The name of the module to import.
-    alt: object
-        An optional module to be used in place of the given module if it
-        fails to import in a non-GPU-enabled install
+    Args:
+        module (str): The name of the module to import.
+        alt (object, optional): A module to be used in place of the given module if it
+            fails to import in a non-GPU-enabled install. Defaults to None.
 
-    Returns
-    -------
-    object
-        The imported module, the given alternate, or a class derived from
-        UnavailableMeta.
+    Returns:
+        tuple: A tuple containing two elements. The first element is the imported module,
+        the given alternate, or a class derived from UnavailableMeta. The second element
+        is a boolean indicating whether the intended import was successful.
     """
 
     return safe_import(
@@ -372,8 +358,8 @@ def gpu_only_import(module, *, alt=None):
     )
 
 
-def gpu_only_import_from(module, symbol, *, alt=None):
-    """A function used to import symbols required only in GPU installs
+def gpu_only_import_from(module, symbol, *, alt=None) -> Tuple[object, bool]:
+    """A function used to import symbols required only in GPU installs.
 
     This function will attempt to import a module with the given name.
     This function will attempt to import a symbol with the given name from
@@ -381,21 +367,16 @@ def gpu_only_import_from(module, symbol, *, alt=None):
     found. Instead, it will return a placeholder object which will raise an
     exception only if used with instructions on installing a GPU build.
 
-    Parameters
-    ----------
-    module: str
-        The name of the module to import.
-    symbol: str
-        The name of the symbol to import.
-    alt: object
-        An optional object to be used in place of the given symbol if it fails
-        to import in a non-GPU-enabled install
+    Args:
+        module (str): The name of the module to import.
+        symbol (str): The name of the symbol to import.
+        alt (object, optional): An object to be used in place of the given symbol if it fails
+            to import in a non-GPU-enabled install. Defaults to None.
 
-    Returns
-    -------
-    object
-        The imported symbol, the given alternate, or a class derived from
-        UnavailableMeta.
+    Returns:
+        tuple: A tuple containing two elements. The first element is the imported symbol,
+        the given alternate, or a class derived from UnavailableMeta. The second element
+        is a boolean indicating whether the intended import was successful.
     """
     return safe_import_from(
         module,
