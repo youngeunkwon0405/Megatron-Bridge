@@ -20,7 +20,7 @@ import torch
 import torch.nn as nn
 
 from megatron.hub.peft.base import PEFT
-from megatron.hub.peft.lora_layers import LinearAdapter, LoRALinear, TELinearAdapter, patch_linear_module
+from megatron.hub.peft.lora_layers import LinearAdapter, LoRALinear, patch_linear_module
 from megatron.hub.peft.module_matcher import ModuleMatcher
 from megatron.hub.peft.utils import ParallelLinearAdapter, get_adapter_attributes_from_linear, is_expert_linear
 from megatron.hub.utils.import_utils import safe_import
@@ -28,13 +28,11 @@ from megatron.hub.utils.import_utils import safe_import
 
 logger = logging.getLogger(__name__)
 
-try:
-    import transformer_engine.pytorch as te
-
-    HAVE_TE = True
-except ImportError:
-    te = None
-    HAVE_TE = False
+te, HAVE_TE = safe_import("transformer_engine.pytorch")
+if HAVE_TE:
+    from megatron.hub.peft.lora_layers import TELinearAdapter
+else:
+    TELinearAdapter = None
 
 if torch.cuda.is_available():
     bitsandbytes, HAVE_BNB = safe_import("bitsandbytes")
@@ -124,6 +122,8 @@ class LoRA(PEFT, ModuleMatcher):
                 ):
                     lora_cls = patch_linear_module
                 elif HAVE_TE and module.__class__ == te.Linear:
+                    if TELinearAdapter is None:
+                        raise ImportError("TELinearAdapter is not available")
                     lora_cls = TELinearAdapter
                 else:
                     lora_cls = LinearAdapter
