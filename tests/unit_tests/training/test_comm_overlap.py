@@ -18,8 +18,8 @@ from unittest.mock import MagicMock, patch
 from megatron.core.distributed import DistributedDataParallelConfig
 from megatron.core.optimizer import OptimizerConfig
 
-from megatron.hub.models.gpt import GPTConfig
-from megatron.hub.models.t5 import T5Config
+from megatron.hub.models.gpt_provider import GPTModelProvider
+from megatron.hub.models.t5_provider import T5ModelProvider
 from megatron.hub.training.comm_overlap import (
     CommOverlapConfig,
     TransformerLayerTPOverlapCfg,
@@ -46,7 +46,7 @@ def create_gpt_config(**kwargs):
     if kwargs.get("pipeline_model_parallel_size", defaults["pipeline_model_parallel_size"]) > 1:
         defaults["pipeline_dtype"] = "fp32"
     defaults.update(kwargs)
-    return GPTConfig(**defaults)
+    return GPTModelProvider(**defaults)
 
 
 def create_t5_config(**kwargs):
@@ -68,7 +68,7 @@ def create_t5_config(**kwargs):
     if kwargs.get("pipeline_model_parallel_size", defaults["pipeline_model_parallel_size"]) > 1:
         defaults["pipeline_dtype"] = "fp32"
     defaults.update(kwargs)
-    return T5Config(**defaults)
+    return T5ModelProvider(**defaults)
 
 
 class TestMegatronCommOverlapConfig:

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Import model providers for easy access
-from megatron.hub.models.gpt_provider import GPTModelProvider
-from megatron.hub.models.llama import (
+from megatron.hub.models.llama.llama_provider import (
     CodeLlamaModelProvider7B,
     CodeLlamaModelProvider13B,
     CodeLlamaModelProvider34B,
@@ -36,12 +34,9 @@ from megatron.hub.models.llama import (
     Llama32ModelProvider3B,
     LlamaModelProvider,
 )
-from megatron.hub.models.t5_provider import T5ModelProvider
 
 
 __all__ = [
-    "GPTModelProvider",
-    "T5ModelProvider",
     "LlamaModelProvider",
     "Llama2ModelProvider7B",
     "Llama2ModelProvider13B",

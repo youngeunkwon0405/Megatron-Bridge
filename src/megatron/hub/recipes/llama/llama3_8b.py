@@ -18,7 +18,7 @@ from typing import List, Optional
 import torch
 from megatron.core.distributed import DistributedDataParallelConfig
 
-from megatron.hub.models.llama import Llama3Config8B
+from megatron.hub.models.llama import Llama3ModelProvider8B
 from megatron.hub.recipes.utils.dataset_utils import get_blend_fields_from_data_paths
 from megatron.hub.recipes.utils.optimizer_utils import distributed_fused_adam_with_cosine_annealing
 from megatron.hub.training.config import (
@@ -39,7 +39,7 @@ def model_config(
     virtual_pipeline_parallelism: Optional[int] = None,
     context_parallelism: int = 2,
     sequence_parallelism: bool = False,
-) -> Llama3Config8B:
+) -> Llama3ModelProvider8B:
     """
     Configure the Llama3 8B model.
 
@@ -52,9 +52,9 @@ def model_config(
         sequence_parallelism (bool): Whether to use sequence parallelism.
 
     Returns:
-        Llama3Config8B: Configuration for the Llama3 8B model.
+        Llama3ModelProvider8B: Configuration for the Llama3 8B model.
     """
-    return Llama3Config8B(
+    return Llama3ModelProvider8B(
         tensor_model_parallel_size=tensor_parallelism,
         pipeline_model_parallel_size=pipeline_parallelism,
         pipeline_dtype=pipeline_parallelism_dtype,

@@ -28,13 +28,29 @@ from megatron.core.dist_checkpointing.strategies.torch import TorchDistLoadShard
 from megatron.core.optimizer import OptimizerConfig
 from megatron.core.transformer.module import MegatronModule
 
-from megatron.hub.models.gpt import GPTConfig, torch_dtype_from_mcore_config
-from megatron.hub.models.t5 import T5Config
+from megatron.hub.models import GPTModelProvider, T5ModelProvider
 from megatron.hub.tokenizers.tokenizer import _HuggingFaceTokenizer
 from megatron.hub.training.checkpointing import save_checkpoint
 from megatron.hub.training.config import CheckpointConfig, ConfigContainer, LoggerConfig, TokenizerConfig
 from megatron.hub.training.state import GlobalState
 from megatron.hub.utils.instantiate_utils import instantiate
+
+
+def torch_dtype_from_mcore_config(config: Any) -> torch.dtype:
+    """Convert Megatron-Core config dtype settings to torch dtype.
+
+    Args:
+        config: Megatron-Core configuration object with bf16/fp16 flags.
+
+    Returns:
+        The corresponding torch dtype.
+    """
+    if hasattr(config, "bf16") and config.bf16:
+        return torch.bfloat16
+    elif hasattr(config, "fp16") and config.fp16:
+        return torch.float16
+    else:
+        return torch.float32
 
 
 if TYPE_CHECKING:
@@ -263,11 +279,11 @@ class BaseImporter(ABC):
             save_hf_tokenizer_assets(str(self.input_path), str(self.output_path / HF_ASSETS_DIR))
         )
 
-    def init_tron_model(self, cfg: GPTConfig | T5Config) -> list[MegatronModule]:
+    def init_tron_model(self, cfg: GPTModelProvider | T5ModelProvider) -> list[MegatronModule]:
         """Initialize the target megatron model on CPU.
 
         Args:
-            cfg: The megatron hub model configuration (e.g., GPTConfig).
+            cfg: The megatron hub model configuration (e.g., GPTModelProvider).
 
         Returns:
             A list containing the initialized megatron module.
@@ -313,7 +329,7 @@ class BaseImporter(ABC):
 
     @property
     @abstractmethod
-    def tron_config(self) -> GPTConfig | T5Config:
+    def tron_config(self) -> GPTModelProvider | T5ModelProvider:
         """Get the megatron hub model configuration object derived from the HF config.
 
         Must be implemented by subclasses.
@@ -403,11 +419,11 @@ class BaseExporter(ABC):
         raise NotImplementedError
 
     @property
-    def tron_config(self) -> GPTConfig | T5Config:
+    def tron_config(self) -> GPTModelProvider | T5ModelProvider:
         """Get the megatron hub configuration loaded from the checkpoint.
 
         Returns:
-            The loaded megatron hub configuration instance (e.g., GPTConfig).
+            The loaded megatron hub configuration instance (e.g., GPTModelProvider).
 
         Raises:
             ValueError: If the config has not been loaded yet (e.g., before `apply`).
@@ -462,7 +478,7 @@ class BaseExporter(ABC):
         with no_init_weights(True):
             return AutoModelForCausalLM.from_config(self.hf_config, torch_dtype=dtype)
 
-    def init_tron_model(self) -> tuple[dict[str, torch.Tensor], GPTConfig | T5Config]:
+    def init_tron_model(self) -> tuple[dict[str, torch.Tensor], GPTModelProvider | T5ModelProvider]:
         """Load the megatron hub model state dict and config from a distributed checkpoint.
 
         Loads the full state dict directly without initializing the full megatron hub model

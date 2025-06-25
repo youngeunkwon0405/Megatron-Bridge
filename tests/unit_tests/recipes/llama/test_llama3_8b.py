@@ -19,8 +19,8 @@ from unittest.mock import patch
 import pytest
 import torch
 
-from megatron.hub.models.llama import Llama3Config8B
-from megatron.hub.recipes.llm.llama3_8b import model_config, pretrain_config
+from megatron.hub.models.llama import Llama3ModelProvider8B
+from megatron.hub.recipes.llama.llama3_8b import model_config, pretrain_config
 from megatron.hub.training.config import ConfigContainer
 
 
@@ -32,7 +32,7 @@ class TestModelConfig:
         """Test model_config with default parameters."""
         config = model_config()
 
-        assert isinstance(config, Llama3Config8B)
+        assert isinstance(config, Llama3ModelProvider8B)
         assert config.tensor_model_parallel_size == 1
         assert config.pipeline_model_parallel_size == 1
         assert config.pipeline_dtype is None
@@ -109,7 +109,7 @@ class TestPretrainConfig:
         config = pretrain_config()
 
         assert isinstance(config, ConfigContainer)
-        assert isinstance(config.model, Llama3Config8B)
+        assert isinstance(config.model, Llama3ModelProvider8B)
 
         # Check training configuration
         assert config.train.train_iters == 1_168_251
@@ -216,7 +216,6 @@ class TestPretrainConfig:
 
     def test_pretrain_config_prioritizes_blend(self):
         """Test that blend takes priority over blend_per_split when both are provided."""
-
         config = pretrain_config(
             train_data_path=["/path/to/train1", "/path/to/train2"],
             valid_data_path=["/path/to/valid1", "/path/to/valid2"],
