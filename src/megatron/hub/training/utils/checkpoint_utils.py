@@ -21,8 +21,8 @@ from typing import Any, Optional, Type, TypeVar
 import torch
 import yaml
 
-from megatron.hub.utils.common_utils import get_rank_safe, get_world_size_safe, print_rank_0
-from megatron.hub.utils.log_utils import log_single_rank
+from megatron.hub.core.utils.common_utils import get_rank_safe, get_world_size_safe, print_rank_0
+from megatron.hub.training.utils.log_utils import log_single_rank
 
 
 TRAIN_STATE_FILE = "train_state.pt"

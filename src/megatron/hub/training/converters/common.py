@@ -29,11 +29,11 @@ from megatron.core.optimizer import OptimizerConfig
 from megatron.core.transformer.module import MegatronModule
 
 from megatron.hub.models import GPTModelProvider, T5ModelProvider
-from megatron.hub.tokenizers.tokenizer import _HuggingFaceTokenizer
 from megatron.hub.training.checkpointing import save_checkpoint
 from megatron.hub.training.config import CheckpointConfig, ConfigContainer, LoggerConfig, TokenizerConfig
 from megatron.hub.training.state import GlobalState
-from megatron.hub.utils.instantiate_utils import instantiate
+from megatron.hub.training.tokenizers.tokenizer import _HuggingFaceTokenizer
+from megatron.hub.training.utils.instantiate_utils import instantiate
 
 
 def torch_dtype_from_mcore_config(config: Any) -> torch.dtype:

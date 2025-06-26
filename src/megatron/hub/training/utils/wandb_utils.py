@@ -15,7 +15,7 @@
 from pathlib import Path
 from typing import Any, Optional
 
-from megatron.hub.utils.common_utils import print_rank_last
+from megatron.hub.core.utils.common_utils import print_rank_last
 
 
 def on_save_checkpoint_success(

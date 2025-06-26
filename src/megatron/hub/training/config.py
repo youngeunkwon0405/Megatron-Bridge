@@ -23,11 +23,11 @@ from megatron.core.datasets.gpt_dataset import GPTDatasetConfig as MCoreGPTDatas
 from megatron.core.distributed import DistributedDataParallelConfig
 from megatron.core.optimizer import OptimizerConfig
 
+from megatron.hub.core.utils.common_utils import get_world_size_safe
 from megatron.hub.data.datasets.packed_sequence import PackedSequenceSpecs
 from megatron.hub.models import GPTModelProvider, T5ModelProvider
-from megatron.hub.tokenizers.config import TokenizerConfig
-from megatron.hub.utils.common_utils import get_world_size_safe
-from megatron.hub.utils.config_utils import ConfigContainer as Container
+from megatron.hub.training.tokenizers.config import TokenizerConfig
+from megatron.hub.training.utils.config_utils import ConfigContainer as Container
 
 
 @dataclass(kw_only=True)

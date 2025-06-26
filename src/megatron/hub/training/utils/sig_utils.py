@@ -18,7 +18,7 @@ from typing import Any, Optional
 import torch
 import torch.distributed
 
-from megatron.hub.utils.common_utils import get_world_size_safe, print_rank_0
+from megatron.hub.core.utils.common_utils import get_world_size_safe, print_rank_0
 
 
 def get_device(local_rank: Optional[int] = None) -> torch.device:

@@ -21,8 +21,8 @@ from typing import Any, Optional, Type, TypeVar
 import yaml
 from omegaconf import OmegaConf
 
-from megatron.hub.utils.instantiate_utils import InstantiationMode, instantiate
-from megatron.hub.utils.yaml_utils import safe_yaml_representers
+from megatron.hub.core.utils.instantiate_utils import InstantiationMode, instantiate
+from megatron.hub.core.utils.yaml_utils import safe_yaml_representers
 
 
 T = TypeVar("T", bound="ConfigContainer")
