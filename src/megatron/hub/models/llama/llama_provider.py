@@ -22,6 +22,7 @@ import torch.nn.functional as F
 from megatron.core.models.gpt import GPTModel as MCoreGPTModel
 from megatron.core.transformer import ModuleSpec
 
+from megatron.hub.core.utils import fusions
 from megatron.hub.models.gpt_provider import GPTModelProvider
 from megatron.hub.models.llama.llama4_utils import get_llama4_layer_spec
 
@@ -48,6 +49,13 @@ class LlamaModelProvider(GPTModelProvider):
     attention_dropout: float = 0.0
     hidden_dropout: float = 0.0
     share_embeddings_and_output_weights: bool = False
+    # Fusions
+    bias_activation_fusion: bool = True
+    masked_softmax_fusion: bool = field(default_factory=fusions.can_enable_masked_softmax_fusion)
+    persist_layer_norm: bool = True
+    bias_dropout_fusion: bool = field(default_factory=fusions.can_enable_bias_dropout_fusion)
+    apply_rope_fusion: bool = field(default_factory=fusions.can_enable_apply_rope_fusion)
+    use_transformer_engine_op_fuser: Optional[bool] = None
 
 
 @dataclass
@@ -105,13 +113,27 @@ class Llama3ModelProvider(LlamaModelProvider):
     """
 
     num_query_groups: int = 8
+    hidden_dropout: float = 0.0
+    attention_dropout: float = 0.0
+    normalization: str = "RMSNorm"
     init_method_std: float = 0.01
     layernorm_epsilon: float = 1.0e-05
+    add_bias_linear: bool = False
+    activation_func: Callable = F.silu
+    gated_linear_unit: bool = True
+    # Fusions
+    bias_activation_fusion: bool = True
+    masked_softmax_fusion: bool = field(default_factory=fusions.can_enable_masked_softmax_fusion)
+    persist_layer_norm: bool = True
+    bias_dropout_fusion: bool = field(default_factory=fusions.can_enable_bias_dropout_fusion)
+    apply_rope_fusion: bool = field(default_factory=fusions.can_enable_apply_rope_fusion)
+    share_embeddings_and_output_weights: bool = False
+    position_embedding_type: str = "rope"
     rotary_percent: float = 1.0
 
 
 @dataclass
-class Llama31ModelProvider(LlamaModelProvider):
+class Llama31ModelProvider(Llama3ModelProvider):
     """Configuration for Llama 3.1 models.
 
     Extends Llama3ModelProvider with specific settings for Llama 3.1 models,
@@ -153,7 +175,7 @@ class Llama31ModelProvider(LlamaModelProvider):
 
 
 @dataclass
-class Llama3ModelProvider8B(LlamaModelProvider):
+class Llama3ModelProvider8B(Llama3ModelProvider):
     """Configuration for an 8B parameter Llama 3 model.
 
     Specific configuration for the 8B Llama 3 model with 32 layers,
@@ -169,7 +191,7 @@ class Llama3ModelProvider8B(LlamaModelProvider):
 
 
 @dataclass
-class Llama3ModelProvider70B(LlamaModelProvider):
+class Llama3ModelProvider70B(Llama3ModelProvider):
     """Configuration for a 70B parameter Llama 3 model.
 
     Specific configuration for the 70B Llama 3 model with 80 layers,
@@ -187,7 +209,7 @@ class Llama3ModelProvider70B(LlamaModelProvider):
 
 
 @dataclass
-class Llama31ModelProvider8B(LlamaModelProvider):
+class Llama31ModelProvider8B(Llama31ModelProvider):
     """Configuration for an 8B parameter Llama 3.1 model.
 
     Specific configuration for the 8B Llama 3.1 model with 32 layers,
@@ -204,7 +226,7 @@ class Llama31ModelProvider8B(LlamaModelProvider):
 
 
 @dataclass
-class Llama31ModelProvider70B(LlamaModelProvider):
+class Llama31ModelProvider70B(Llama31ModelProvider):
     """Configuration for a 70B parameter Llama 3.1 model.
 
     Specific configuration for the 70B Llama 3.1 model with 80 layers,
@@ -222,7 +244,7 @@ class Llama31ModelProvider70B(LlamaModelProvider):
 
 
 @dataclass
-class Llama31ModelProvider405B(LlamaModelProvider):
+class Llama31ModelProvider405B(Llama31ModelProvider):
     """Configuration for a 405B parameter Llama 3.1 model.
 
     Specific configuration for the 405B Llama 3.1 model with 126 layers,
@@ -240,7 +262,7 @@ class Llama31ModelProvider405B(LlamaModelProvider):
 
 
 @dataclass
-class Llama32ModelProvider1B(LlamaModelProvider):
+class Llama32ModelProvider1B(Llama31ModelProvider):
     """Configuration for a 1B parameter Llama 3.2 model.
 
     Specific configuration for the 1B Llama 3.2 model with 16 layers,
@@ -259,7 +281,7 @@ class Llama32ModelProvider1B(LlamaModelProvider):
 
 
 @dataclass
-class Llama32ModelProvider3B(LlamaModelProvider):
+class Llama32ModelProvider3B(Llama31ModelProvider):
     """Configuration for a 3B parameter Llama 3.2 model.
 
     Specific configuration for the 3B Llama 3.2 model with 28 layers,
@@ -278,7 +300,7 @@ class Llama32ModelProvider3B(LlamaModelProvider):
 
 
 @dataclass
-class CodeLlamaModelProvider7B(LlamaModelProvider):
+class CodeLlamaModelProvider7B(Llama2ModelProvider7B):
     """Configuration for a 7B parameter CodeLlama model.
 
     Extends Llama2ModelProvider7B with modified settings specifically for code generation,
@@ -329,7 +351,7 @@ class CodeLlamaModelProvider70B(Llama2ModelProvider70B):
 
 
 @dataclass
-class Llama4ModelProvider(LlamaModelProvider):
+class Llama4ModelProvider(Llama3ModelProvider):
     """
     Configuration for Llama4 language model.
     """
