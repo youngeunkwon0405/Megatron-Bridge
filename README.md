@@ -7,26 +7,26 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/release/python-3100/)
 <!-- [![GitHub Stars](https://img.shields.io/github/stars/NVIDIA-NeMo/Megatron-Hub.svg?style=social&label=Star&maxAge=2592000)](https://github.com/NVIDIA-NeMo/Megatron-Hub/stargazers/) -->
 
-[Documentation](https://nemo-framework-documentation.gitlab-master-pages.nvidia.com/megatron-hub-build/) | [Recipes](#supported-models) | [Examples](https://github.com/NVIDIA-NeMo/Megatron-Hub/tree/maanug/readme-content/examples) | [Contributing](https://github.com/NVIDIA-NeMo/Megatron-Hub/blob/main/CONTRIBUTING.md)
+[Documentation](https://nemo-framework-documentation.gitlab-master-pages.nvidia.com/megatron-hub-build/) | [Recipes](#supported-models) | [Examples](https://github.com/NVIDIA-NeMo/Megatron-Hub/tree/main/examples) | [Contributing](https://github.com/NVIDIA-NeMo/Megatron-Hub/blob/main/CONTRIBUTING.md)
 </div>
 
 ## Overview
 
-Megatron Hub is an extension of NVIDIA's Megatron Core library that enables pretraining and finetuning HuggingFace models using a Megatron-style training loop, with features like model parallelisms and FP8 precision.
+Megatron Hub is an extension of NVIDIA's Megatron Core library that enables pretraining and finetuning HuggingFace models using a performant and scalable training loop, with features like model parallelisms and FP8 precision.
 
 Megatron Hub is designed for researchers and engineers who need to train large-scale models efficiently while maintaining flexibility for experimentation and customization.
 
 ## Key Features
 
 - **Model Conversion**: Seamless bidirectional conversion between Hugging Face and Megatron formats for interoperability
-- **Training Infrastructure**: Configurable and scalable training loop that handles data loading, distributed training, checkpointing, and logging
-- **Parameter-Efficient Finetuning**: In-house PEFT implementation that supports LoRA, DoRA, or custom PEFT methods
-- **Training Recipes**: Pre-configured production-ready training recipes for popular models like Llama3, with optimized hyperparameters and distributed training configuration
+- **Training Infrastructure**: Configurable training loop with near linear performance scalability to thousands of nodes that handles data loading, distributed training, checkpointing, and logging
+- **Parameter-Efficient Finetuning**: PEFT implementation tailored for Megatron-based models that supports LoRA, DoRA, and user-defined PEFT methods
+- **Training Recipes**: Pre-configured production-ready training recipes for popular models like Llama 3, with optimized hyperparameters and distributed training configuration
 - **Performance Optimization**: Built-in support for FP8 training, model parallelisms, and memory-efficient techniques
 
 ## Supported Models
 
-Megatron Hub provides out-of-the-box configuration recipes for a wide range of models, built on top of base model architectures from Megatron Core:
+Megatron Hub provides out-of-the-box recipes for a wide range of models, built on top of base model architectures from Megatron Core:
 
 ### Large Language Models
 
@@ -49,9 +49,9 @@ Optionally, Megatron Hub also supports launching with [NeMo-Run](https://github.
 - [pretrain_llama3_8b_nemo_run_partial.py](https://github.com/NVIDIA-NeMo/Megatron-Hub/blob/main/examples/recipes/llama3_8b/pretrain_llama3_8b_nemo_run_partial.py)
 
 
-These examples can also be run as is with the Llama3 8b recipe (with NeMo-Run installed).
+These examples can also be run as is with the Llama 3 8b recipe (with NeMo-Run installed).
 
-Launch Llama3 8b Pretraining with NeMo-Run's `run.Script`:
+Launch Llama 3 8b Pretraining with NeMo-Run's `run.Script`:
 ```sh
 uv run python pretrain_llama3_8b_nemo_run_script.py \
     --nproc-per-node=2 \
@@ -59,7 +59,7 @@ uv run python pretrain_llama3_8b_nemo_run_script.py \
     train.train_iters=10 # this script passes Hydra-style overrides to the target script
 ```
 
-Launch Llama3 8b Pretraining with NeMo-Run's `run.Partial`
+Launch Llama 3 8b Pretraining with NeMo-Run's `run.Partial`
 ```sh
 uv run python pretrain_llama3_8b_nemo_run_partial.py \
     --nproc-per-node=2
