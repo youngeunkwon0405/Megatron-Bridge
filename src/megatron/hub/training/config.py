@@ -26,6 +26,7 @@ from megatron.core.optimizer import OptimizerConfig
 from megatron.hub.core.utils.common_utils import get_world_size_safe
 from megatron.hub.data.datasets.packed_sequence import PackedSequenceSpecs
 from megatron.hub.models import GPTModelProvider, T5ModelProvider
+from megatron.hub.peft.base import PEFT
 from megatron.hub.training.comm_overlap import CommOverlapConfig
 from megatron.hub.training.tokenizers.config import TokenizerConfig
 from megatron.hub.training.utils.config_utils import _ConfigContainerBase as Container
@@ -694,6 +695,7 @@ class ConfigContainer(Container):
     straggler: Optional[StragglerDetectionConfig] = None
     nvrx_straggler: Optional[NVRxStragglerDetectionConfig] = None
     profiling: Optional[ProfilingConfig] = None
+    peft: Optional[PEFT] = None
     comm_overlap: Optional[CommOverlapConfig] = None
 
     def get_data_parallel_size(self, world_size: int) -> int:
@@ -779,3 +781,6 @@ class ConfigContainer(Container):
                 f"For details please visit "
                 f"https://docs.nvidia.com/nemo-framework/user-guide/latest/sft_peft/packed_sequence.html"
             )
+
+        if self.peft is not None:
+            assert self.checkpoint.pretrained_checkpoint is not None, "PEFT requires a pretrained checkpoint path"
