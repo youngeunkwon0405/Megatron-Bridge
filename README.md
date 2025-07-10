@@ -16,7 +16,46 @@ Megatron Hub is an extension of NVIDIA's Megatron Core library that enables pret
 
 Megatron Hub is designed for researchers and engineers who need to train large-scale models efficiently while maintaining flexibility for experimentation and customization.
 
-## Key Features
+## 🔧 Installation
+
+For quick exploration of Megatron-Hub, we recommend installing our pip package:
+
+```bash
+pip install megatron-hub
+```
+
+### 📦 Pip install with TransformerEngine support
+
+For TransformerEngine support, the following system requirements need to be fulfilled:
+
+- Python 3.12
+- PyTorch 2.7
+- CUDA 12.8
+- Ubuntu 24.04
+
+Use the following to install Megatron-Hub with TransformerEngine:
+
+```bash
+pip install torch setuptools pybind11 wheel_stub  # Required for TE
+pip install --no-build-isolation megatron-hub[te]
+```
+
+### 🐳 NeMo-FW container
+
+Best experience, highest performance and full feature support is guaranteed by the [NeMo Framework container](https://catalog.ngc.nvidia.com/orgs/nvidia/containers/nemo/tags). Please fetch the most recent $TAG and run the following command to start a container:
+
+```bash
+docker run --rm -it -w /workdir -v $(pwd):/workdir \
+  --entrypoint bash \
+  --gpus all \
+  nvcr.io/nvidia/nemo:${TAG}
+```
+
+### uv
+
+For installing Megatron-Hub with uv, please refer to our [Contribution guide](https://github.com/NVIDIA-NeMo/Megatron-Hub/blob/main/CONTRIBUTING.md)
+
+## 🚀 Key Features
 
 - **Model Conversion**: Seamless bidirectional conversion between Hugging Face and Megatron formats for interoperability
 - **Training Infrastructure**: Configurable training loop with near linear performance scalability to thousands of nodes that handles data loading, distributed training, checkpointing, and logging
@@ -39,6 +78,7 @@ Megatron Hub provides out-of-the-box recipes for a wide range of models, built o
 #### Launching Recipes
 
 All recipes are ready to train out of the box, using mock data by default. For an example of how to override the default configuration through YAML or Hydra-style CLI overrides, please have a look at this [script](https://github.com/NVIDIA-NeMo/Megatron-Hub/examples/recipes/llama3_8b/pretrain_llama3_8b.py). The script can then be launched with `torchrun`. For example, with the aforementioned script:
+
 ```sh
 torchrun --nproc-per-node=2 pretrain_llama3_8b.py model.tensor_model_parallel_size=1 <additional overrides ...>
 ```
@@ -48,10 +88,10 @@ Optionally, Megatron Hub also supports launching with [NeMo-Run](https://github.
 - [pretrain_llama3_8b_nemo_run_script.py](https://github.com/NVIDIA-NeMo/Megatron-Hub/blob/main/examples/recipes/llama3_8b/pretrain_llama3_8b_nemo_run_script.py)
 - [pretrain_llama3_8b_nemo_run_partial.py](https://github.com/NVIDIA-NeMo/Megatron-Hub/blob/main/examples/recipes/llama3_8b/pretrain_llama3_8b_nemo_run_partial.py)
 
-
 These examples can also be run as is with the Llama 3 8b recipe (with NeMo-Run installed).
 
 Launch Llama 3 8b Pretraining with NeMo-Run's `run.Script`:
+
 ```sh
 uv run python pretrain_llama3_8b_nemo_run_script.py \
     --nproc-per-node=2 \
@@ -60,6 +100,7 @@ uv run python pretrain_llama3_8b_nemo_run_script.py \
 ```
 
 Launch Llama 3 8b Pretraining with NeMo-Run's `run.Partial`
+
 ```sh
 uv run python pretrain_llama3_8b_nemo_run_partial.py \
     --nproc-per-node=2
@@ -67,45 +108,9 @@ uv run python pretrain_llama3_8b_nemo_run_partial.py \
 
 <!-- ### Vision-Language Models -->
 
-
 ## Performance Benchmarks
 
 Coming soon ...
-
-## Installation 
-
-### Pip Installation
-To install with pip, use the following command:
-```
-pip install git+https://github.com/NVIDIA-NeMo/Megatron-Hub.git
-```
-
-
-### uv Installation
-To install Megatron Hub to an active virtual environment or project environment, use the command:
-```
-uv pip install git+https://github.com/NVIDIA-NeMo/Megatron-Hub.git
-```
-
-To add Megatron Hub as a dependency for your project, use the following command:
-```
-uv add git+https://github.com/NVIDIA-NeMo/Megatron-Hub.git
-```
-
-If you are a contributor, you can install this project for development with the following commands:
-```
-git clone https://github.com/NVIDIA-NeMo/Megatron-Hub.git
-cd Megatron-Hub
-uv sync
-```
-
-To install additional dependency groups use one of the following commands instead:
-```
-uv sync --group docs # for building the documentation
-uv sync --group dev --group test # for running linters and tests
-```
-
-If you do not have `uv` installed, please refer to the installation [docs](https://docs.astral.sh/uv/getting-started/installation/).
 
 ## Project Structure
 
