@@ -49,8 +49,8 @@ class MixedPrecisionConfig:
     fp8_wgrad: bool = True
     fp8_dot_product_attention: bool = False
     fp8_multi_head_attention: bool = False
-    fp8_param: bool = True
-    fp8_param_gather: bool = True
+    fp8_param: Optional[bool] = None
+    fp8_param_gather: bool = False
     # FP16 Loss scaling
     loss_scale: Optional[float] = None
     initial_loss_scale: Optional[float] = None
@@ -59,6 +59,23 @@ class MixedPrecisionConfig:
     hysteresis: Optional[float] = None
     num_layers_at_start_in_bf16: int = 0
     num_layers_at_end_in_bf16: int = 0
+
+    def __setattr__(self, name: str, value) -> None:
+        # Use object.__setattr__ to avoid recursion
+        object.__setattr__(self, name, value)
+
+        # Keep fp8_param and fp8_param_gather in sync
+        if name == "fp8_param_gather" and hasattr(self, "fp8_param"):
+            if self.fp8_param != value:
+                object.__setattr__(self, "fp8_param", value)
+        elif name == "fp8_param" and hasattr(self, "fp8_param_gather"):
+            if self.fp8_param_gather != value:
+                object.__setattr__(self, "fp8_param_gather", value)
+
+    def __post_init__(self):
+        # If fp8_param is None, initialize it from fp8_param_gather
+        if self.fp8_param is None:
+            self.fp8_param = self.fp8_param_gather
 
     def setup(
         self,
