@@ -783,6 +783,19 @@ class TestRerunConfigValidation:
             cfg.report_time_interval = -100.0
             cfg.__post_init__()
 
+    def test_checkpoint_config(self):
+        self._check_post_init_idempotency(create_test_checkpoint_config)
+
+        # Test rerun of post-init with valid and invalid changes
+        cfg = create_test_checkpoint_config(ckpt_format="torch_dist")
+        cfg.save = "/tmp/test_checkpoint_config"
+        cfg.__post_init__()
+
+        with pytest.raises(AssertionError, match="load_main_params_from_ckpt must be used with load_optim=False"):
+            cfg.load_main_params_from_ckpt = True
+            cfg.load_optim = True
+            cfg.__post_init__()
+
     def test_rerun_validate_config_container(self):
         import copy
         from dataclasses import fields
@@ -822,3 +835,28 @@ class TestRerunConfigValidation:
                 full_cfg.validate()
         finally:
             restore_get_world_size_safe(og_ws, cfg_mod)
+
+
+class TestCheckpointConfig:
+    """Tests for CheckpointConfig class."""
+
+    @pytest.mark.parametrize(
+        "load_main_params_from_ckpt, load_optim, expect_assertion_error",
+        [
+            (True, False, False),  # Valid combination
+            (True, True, True),  # Invalid combination - should raise error
+            (False, False, False),  # Valid combination
+            (False, True, False),  # Valid combination
+        ],
+    )
+    def test_load_main_params_from_ckpt_validation_parametrized(
+        self, load_main_params_from_ckpt, load_optim, expect_assertion_error
+    ):
+        """Parametrized test for load_main_params_from_ckpt validation."""
+        if expect_assertion_error:
+            with pytest.raises(AssertionError, match="load_main_params_from_ckpt must be used with load_optim=False"):
+                create_test_checkpoint_config(
+                    load_main_params_from_ckpt=load_main_params_from_ckpt, load_optim=load_optim
+                )
+        else:
+            create_test_checkpoint_config(load_main_params_from_ckpt=load_main_params_from_ckpt, load_optim=load_optim)
