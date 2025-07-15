@@ -796,6 +796,14 @@ class TestRerunConfigValidation:
             cfg.load_optim = True
             cfg.__post_init__()
 
+    def test_mixed_precision_config(self):
+        from megatron.hub.training.mixed_precision import bf16_with_mxfp8_mixed
+
+        self._check_post_init_idempotency(bf16_with_mxfp8_mixed)
+        cfg = bf16_with_mxfp8_mixed()
+        cfg.grad_reduce_in_fp32 = False
+        cfg.__post_init__()
+
     def test_rerun_validate_config_container(self):
         import copy
         from dataclasses import fields
