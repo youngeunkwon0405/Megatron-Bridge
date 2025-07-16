@@ -14,6 +14,7 @@
 
 from megatron.hub.bridge.auto_bridge import AutoBridge
 from megatron.hub.bridge.causal_bridge import CausalLMBridge
+from megatron.hub.bridge.mapping_registry import MegatronMappingRegistry
 from megatron.hub.bridge.model_bridge import MegatronModelBridge, WeightDistributionMode
 from megatron.hub.bridge.param_mapping import (
     ColumnParallelMapping,
@@ -24,7 +25,6 @@ from megatron.hub.bridge.param_mapping import (
     RowParallelMapping,
     TPAwareMapping,
 )
-from megatron.hub.bridge.state_bridge import MegatronStateBridge
 
 
 __all__ = [
@@ -37,7 +37,7 @@ __all__ = [
     "TPAwareMapping",
     "QKVMapping",
     "GatedMLPMapping",
-    "MegatronStateBridge",
+    "MegatronMappingRegistry",
     "MegatronModelBridge",
     "WeightDistributionMode",
 ]

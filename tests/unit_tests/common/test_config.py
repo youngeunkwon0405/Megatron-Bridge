@@ -22,8 +22,8 @@ import yaml
 
 from megatron.hub.common.config import (
     ConfigProtocol,
-    from_pretrained,
-    save_pretrained,
+    from_hf_pretrained,
+    save_hf_pretrained,
 )
 
 
@@ -36,13 +36,13 @@ class MockConfig:
     num_layers: int = 12
 
     @classmethod
-    def from_pretrained(cls, pretrained_model_name_or_path, **kwargs):
-        """Mock from_pretrained implementation."""
-        return from_pretrained(cls, pretrained_model_name_or_path, **kwargs)
+    def from_hf_pretrained(cls, pretrained_model_name_or_path, **kwargs):
+        """Mock from_hf_pretrained implementation."""
+        return from_hf_pretrained(cls, pretrained_model_name_or_path, **kwargs)
 
-    def save_pretrained(self, save_directory, **kwargs):
-        """Mock save_pretrained implementation."""
-        save_pretrained(self, save_directory, **kwargs)
+    def save_hf_pretrained(self, save_directory, **kwargs):
+        """Mock save_hf_pretrained implementation."""
+        save_hf_pretrained(self, save_directory, **kwargs)
 
 
 class TestConfigProtocol:
@@ -51,12 +51,12 @@ class TestConfigProtocol:
     def test_protocol_implementation(self):
         """Test that MockConfig implements ConfigProtocol."""
         assert isinstance(MockConfig, ConfigProtocol)
-        assert hasattr(MockConfig, "from_pretrained")
-        assert hasattr(MockConfig, "save_pretrained")
+        assert hasattr(MockConfig, "from_hf_pretrained")
+        assert hasattr(MockConfig, "save_hf_pretrained")
 
 
 class TestFromPretrained:
-    """Tests for from_pretrained function."""
+    """Tests for from_hf_pretrained function."""
 
     def test_load_from_yaml_file(self, tmp_path):
         """Test loading configuration from YAML file."""
@@ -66,7 +66,7 @@ class TestFromPretrained:
         with open(config_file, "w") as f:
             yaml.dump(config_data, f)
 
-        config = from_pretrained(MockConfig, str(config_file))
+        config = from_hf_pretrained(MockConfig, str(config_file))
         assert config.model_type == "test"
         assert config.hidden_size == 1024
         assert config.num_layers == 24
@@ -79,7 +79,7 @@ class TestFromPretrained:
         with open(config_file, "w") as f:
             json.dump(config_data, f)
 
-        config = from_pretrained(MockConfig, str(config_file))
+        config = from_hf_pretrained(MockConfig, str(config_file))
         assert config.model_type == "test_json"
         assert config.hidden_size == 512
         assert config.num_layers == 6
@@ -92,7 +92,7 @@ class TestFromPretrained:
         with open(config_file, "w") as f:
             yaml.dump(config_data, f)
 
-        config = from_pretrained(MockConfig, str(tmp_path))
+        config = from_hf_pretrained(MockConfig, str(tmp_path))
         assert config.model_type == "dir_test"
         assert config.hidden_size == 256
         assert config.num_layers == 4
@@ -105,7 +105,7 @@ class TestFromPretrained:
         with open(config_file, "w") as f:
             yaml.dump(config_data, f)
 
-        config = from_pretrained(MockConfig, str(config_file), hidden_size=2048, num_layers=48)
+        config = from_hf_pretrained(MockConfig, str(config_file), hidden_size=2048, num_layers=48)
         assert config.model_type == "original"  # Not overridden
         assert config.hidden_size == 2048  # Overridden
         assert config.num_layers == 48  # Overridden
@@ -118,24 +118,24 @@ class TestFromPretrained:
         with open(config_file, "w") as f:
             yaml.dump(config_data, f)
 
-        config = from_pretrained(MockConfig, str(tmp_path), config_name="my_config")
+        config = from_hf_pretrained(MockConfig, str(tmp_path), config_name="my_config")
         assert config.model_type == "custom"
         assert config.hidden_size == 1024
 
     def test_file_not_found(self, tmp_path):
         """Test error when config file not found."""
         with pytest.raises(FileNotFoundError):
-            from_pretrained(MockConfig, str(tmp_path / "nonexistent"))
+            from_hf_pretrained(MockConfig, str(tmp_path / "nonexistent"))
 
 
 class TestSavePretrained:
-    """Tests for save_pretrained function."""
+    """Tests for save_hf_pretrained function."""
 
     def test_save_to_yaml(self, tmp_path):
         """Test saving configuration to YAML format."""
         config = MockConfig(model_type="save_test", hidden_size=2048, num_layers=32)
 
-        save_pretrained(config, str(tmp_path), config_format="yaml")
+        save_hf_pretrained(config, str(tmp_path), config_format="yaml")
 
         # Verify saved file
         saved_file = tmp_path / "config.yaml"
@@ -152,7 +152,7 @@ class TestSavePretrained:
         """Test saving configuration to JSON format."""
         config = MockConfig(model_type="json_save", hidden_size=1024)
 
-        save_pretrained(config, str(tmp_path), config_format="json")
+        save_hf_pretrained(config, str(tmp_path), config_format="json")
 
         saved_file = tmp_path / "config.json"
         assert saved_file.exists()
@@ -167,17 +167,17 @@ class TestSavePretrained:
         """Test saving with custom config name."""
         config = MockConfig()
 
-        save_pretrained(config, str(tmp_path), config_name="my_model_config")
+        save_hf_pretrained(config, str(tmp_path), config_name="my_model_config")
 
         saved_file = tmp_path / "my_model_config.json"
         assert saved_file.exists()
 
     def test_create_directory(self, tmp_path):
-        """Test that save_pretrained creates directory if it doesn't exist."""
+        """Test that save_hf_pretrained creates directory if it doesn't exist."""
         config = MockConfig()
         save_dir = tmp_path / "new_dir"
 
-        save_pretrained(config, str(save_dir))
+        save_hf_pretrained(config, str(save_dir))
 
         assert save_dir.exists()
         assert (save_dir / "config.json").exists()

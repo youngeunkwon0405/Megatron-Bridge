@@ -36,7 +36,7 @@ from megatron.core.enums import ModelType
 from megatron.core.tensor_parallel.random import model_parallel_cuda_manual_seed
 from megatron.core.transformer.module import MegatronModule
 
-from megatron.hub.common.config import from_pretrained, save_pretrained
+from megatron.hub.common.config import from_hf_pretrained, save_hf_pretrained
 from megatron.hub.core.models.model_provider import get_model
 from megatron.hub.core.utils.instantiate_utils import InstantiationMode
 
@@ -50,7 +50,7 @@ class ModelProviderMixin(abc.ABC, Generic[ModelT]):
     The ModelProvider pattern solves ecosystem fragmentation by providing a standardized
     way to instantiate models. This mixin provides a consistent `provide_models()` method
     that handles the complexity of distributed training setup, along with HuggingFace-inspired
-    `.from_pretrained()` and `.save_pretrained()` for interoperability.
+    `.from_hf_pretrained()` and `.save_hf_pretrained()` for interoperability.
 
     For advanced customization, multiple hooks can be registered via `register_pre_wrap_hook`
     and `register_post_wrap_hook`. These hooks allow modifying the model before and after
@@ -295,7 +295,7 @@ class ModelProviderMixin(abc.ABC, Generic[ModelT]):
             self._post_wrap_hooks.append(hook)
 
     @classmethod
-    def from_pretrained(
+    def from_hf_pretrained(
         cls,
         pretrained_model_name_or_path: str | Path,
         trust_remote_code: bool = False,
@@ -314,7 +314,7 @@ class ModelProviderMixin(abc.ABC, Generic[ModelT]):
             trust_remote_code: Whether to trust remote code when loading.
             mode: The instantiation mode (e.g., `LENIENT`).
             config_name: The name of the configuration file (without extension).
-            **kwargs: Additional keyword arguments for `from_pretrained`.
+            **kwargs: Additional keyword arguments for `from_hf_pretrained`.
 
         Returns:
             An instance of the model provider with the loaded configuration.
@@ -323,7 +323,7 @@ class ModelProviderMixin(abc.ABC, Generic[ModelT]):
             config_name = cls.CONFIG_NAME.rsplit(".", 1)[0]
         if mode is None:
             mode = InstantiationMode.LENIENT
-        return from_pretrained(
+        return from_hf_pretrained(
             cls,
             pretrained_model_name_or_path,
             trust_remote_code=trust_remote_code,
@@ -332,7 +332,7 @@ class ModelProviderMixin(abc.ABC, Generic[ModelT]):
             **kwargs,
         )
 
-    def save_pretrained(
+    def save_hf_pretrained(
         self,
         save_directory: str | Path,
         config_format: str | None = None,
@@ -348,13 +348,13 @@ class ModelProviderMixin(abc.ABC, Generic[ModelT]):
             save_directory: The directory where the configuration will be saved.
             config_format: The format for the configuration file (e.g., `json` or `yaml`).
             config_name: The name of the configuration file (without extension).
-            **kwargs: Additional keyword arguments for `save_pretrained`.
+            **kwargs: Additional keyword arguments for `save_hf_pretrained`.
         """
         if config_name is None:
             config_name = self.CONFIG_NAME.rsplit(".", 1)[0]
         if config_format is None:
             config_format = self.DEFAULT_CONFIG_FORMAT
-        return save_pretrained(self, save_directory, config_format=config_format, config_name=config_name, **kwargs)
+        return save_hf_pretrained(self, save_directory, config_format=config_format, config_name=config_name, **kwargs)
 
 
 class GetModelKwargs(TypedDict, total=False):

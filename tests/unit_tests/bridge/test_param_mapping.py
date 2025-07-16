@@ -82,30 +82,30 @@ class MockModule(torch.nn.Module):
 
 
 class TestDirectMapping:
-    def test_to_megatron(self, mock_distributed_env, transformer_config):
+    def test_hf_to_megatron(self, mock_distributed_env, transformer_config):
         mock_distributed_env()
-        bridge = DirectMapping("megatron.weight", "hf.weight")
+        mapping = DirectMapping("megatron.weight", "hf.weight")
         hf_weight = torch.randn(16, 16)
         megatron_module = MockModule(transformer_config)
-        megatron_weight = bridge.to_megatron(hf_weight, megatron_module)
+        megatron_weight = mapping.hf_to_megatron(hf_weight, megatron_module)
         assert torch.equal(megatron_weight, hf_weight)
 
-    def test_from_megatron(self, mock_distributed_env):
+    def test_megatron_to_hf(self, mock_distributed_env):
         mock_distributed_env()
-        bridge = DirectMapping("megatron.weight", "hf.weight")
+        mapping = DirectMapping("megatron.weight", "hf.weight")
         megatron_weight = torch.randn(16, 16)
-        hf_weights = bridge.from_megatron(megatron_weight, None)
+        hf_weights = mapping.megatron_to_hf(megatron_weight, None)
         assert "hf.weight" in hf_weights
         assert torch.equal(hf_weights["hf.weight"], megatron_weight)
 
 
 class TestReplicatedMapping:
     @pytest.mark.parametrize("tp_rank", [0, 1])
-    def test_from_megatron_tp_gt_1(self, mock_distributed_env, tp_rank):
+    def test_megatron_to_hf_tp_gt_1(self, mock_distributed_env, tp_rank):
         mock_mpu, _ = mock_distributed_env(tp_size=2, tp_rank=tp_rank)
-        bridge = ReplicatedMapping("rep.weight", "hf.weight")
+        mapping = ReplicatedMapping("rep.weight", "hf.weight")
         megatron_weight = torch.randn(16, 16)
-        result = bridge.from_megatron(megatron_weight, None)
+        result = mapping.megatron_to_hf(megatron_weight, None)
 
         if tp_rank == 0:
             assert "hf.weight" in result
@@ -113,9 +113,9 @@ class TestReplicatedMapping:
         else:
             assert not result
 
-    def test_to_megatron_broadcast(self, mock_distributed_env, transformer_config):
+    def test_hf_to_megatron_broadcast(self, mock_distributed_env, transformer_config):
         mock_mpu, mock_dist = mock_distributed_env(tp_size=2, tp_rank=0)
-        bridge = ReplicatedMapping("rep.weight", "hf.weight")
+        mapping = ReplicatedMapping("rep.weight", "hf.weight")
         hf_weight = torch.randn(16, 16)
         megatron_module = MockModule(transformer_config, weight_shape=(16, 16))
 
@@ -124,17 +124,17 @@ class TestReplicatedMapping:
 
         mock_dist.broadcast.side_effect = mock_broadcast
 
-        with patch.object(bridge, "broadcast_tensor_to_tp_ranks", return_value=hf_weight) as mock_broadcast_method:
-            result = bridge.to_megatron(hf_weight, megatron_module)
+        with patch.object(mapping, "broadcast_tensor_to_tp_ranks", return_value=hf_weight) as mock_broadcast_method:
+            result = mapping.hf_to_megatron(hf_weight, megatron_module)
             mock_broadcast_method.assert_called_once_with(hf_weight, src_rank=0)
             assert torch.equal(result, hf_weight)
 
 
 class TestColumnParallelMapping:
     @pytest.mark.parametrize("tp_rank", [0, 1])
-    def test_to_megatron(self, mock_distributed_env, transformer_config, tp_rank):
+    def test_hf_to_megatron(self, mock_distributed_env, transformer_config, tp_rank):
         _, mock_dist = mock_distributed_env(tp_size=2, tp_rank=tp_rank)
-        bridge = ColumnParallelMapping("col.weight", "hf.weight")
+        mapping = ColumnParallelMapping("col.weight", "hf.weight")
         megatron_module = MockModule(transformer_config, weight_shape=(16, 16))
         # Create the full weight to simulate distributed scatter
         full_weight = torch.randn(32, 16)
@@ -144,12 +144,12 @@ class TestColumnParallelMapping:
             if tp_rank == 0:
                 output.copy_(scatter_list[0])
             else:
-                # On non-src ranks, scatter_list is None. The bridge handles this.
+                # On non-src ranks, scatter_list is None. The mapping handles this.
                 # Here we simulate receiving the data.
                 output.copy_(torch.chunk(full_weight, 2, dim=0)[tp_rank])
 
         mock_dist.scatter.side_effect = mock_scatter
-        megatron_weight = bridge.to_megatron(hf_weight, megatron_module)
+        megatron_weight = mapping.hf_to_megatron(hf_weight, megatron_module)
         assert megatron_weight.shape == (16, 16)
 
         if tp_rank == 0:
@@ -157,15 +157,15 @@ class TestColumnParallelMapping:
             assert torch.equal(torch.cat(call_args[1], dim=0), hf_weight)
 
     @pytest.mark.parametrize("tp_rank", [0, 1])
-    def test_from_megatron(self, mock_distributed_env, tp_rank):
+    def test_megatron_to_hf(self, mock_distributed_env, tp_rank):
         mock_distributed_env(tp_size=2, tp_rank=tp_rank)
-        bridge = ColumnParallelMapping("col.weight", "hf.weight")
+        mapping = ColumnParallelMapping("col.weight", "hf.weight")
         megatron_shard = torch.randn(16, 16)
 
-        with patch.object(bridge, "gather_from_tp_ranks") as mock_gather:
+        with patch.object(mapping, "gather_from_tp_ranks") as mock_gather:
             full_weight = torch.randn(32, 16)
             mock_gather.return_value = list(torch.chunk(full_weight, 2, dim=0))
-            result = bridge.from_megatron(megatron_shard, None)
+            result = mapping.megatron_to_hf(megatron_shard, None)
 
             if tp_rank == 0:
                 assert "hf.weight" in result
@@ -176,9 +176,9 @@ class TestColumnParallelMapping:
 
 class TestRowParallelMapping:
     @pytest.mark.parametrize("tp_rank", [0, 1])
-    def test_to_megatron(self, mock_distributed_env, transformer_config, tp_rank):
+    def test_hf_to_megatron(self, mock_distributed_env, transformer_config, tp_rank):
         _, mock_dist = mock_distributed_env(tp_size=2, tp_rank=tp_rank)
-        bridge = RowParallelMapping("row.weight", "hf.weight")
+        mapping = RowParallelMapping("row.weight", "hf.weight")
         megatron_module = MockModule(transformer_config, weight_shape=(16, 16))
         # Create the full weight to simulate distributed scatter
         full_weight = torch.randn(16, 32)
@@ -191,19 +191,19 @@ class TestRowParallelMapping:
                 output.copy_(torch.chunk(full_weight, 2, dim=1)[tp_rank])
 
         mock_dist.scatter.side_effect = mock_scatter
-        megatron_weight = bridge.to_megatron(hf_weight, megatron_module)
+        megatron_weight = mapping.hf_to_megatron(hf_weight, megatron_module)
         assert megatron_weight.shape == (16, 16)
 
     @pytest.mark.parametrize("tp_rank", [0, 1])
-    def test_from_megatron(self, mock_distributed_env, tp_rank):
+    def test_megatron_to_hf(self, mock_distributed_env, tp_rank):
         mock_distributed_env(tp_size=2, tp_rank=tp_rank)
-        bridge = RowParallelMapping("row.weight", "hf.weight")
+        mapping = RowParallelMapping("row.weight", "hf.weight")
         megatron_shard = torch.randn(16, 16)
 
-        with patch.object(bridge, "gather_from_tp_ranks") as mock_gather:
+        with patch.object(mapping, "gather_from_tp_ranks") as mock_gather:
             full_weight = torch.randn(16, 32)
             mock_gather.return_value = list(torch.chunk(full_weight, 2, dim=1))
-            result = bridge.from_megatron(megatron_shard, None)
+            result = mapping.megatron_to_hf(megatron_shard, None)
 
             if tp_rank == 0:
                 assert "hf.weight" in result
@@ -215,7 +215,7 @@ class TestRowParallelMapping:
 class TestTPAwareMapping:
     def test_detect_parallelism_type(self, mock_distributed_env, transformer_config):
         mock_distributed_env()
-        bridge = TPAwareMapping(megatron_param="some.weight", hf_param="hf.weight")
+        mapping = TPAwareMapping(megatron_param="some.weight", hf_param="hf.weight")
 
         # Mock modules with different characteristics
         class MyCol(torch.nn.Module):
@@ -234,14 +234,14 @@ class TestTPAwareMapping:
         class MyCustomRow(torch.nn.Module):
             pass
 
-        assert bridge._detect_parallelism_type(MyCol()) == "column"
-        assert bridge._detect_parallelism_type(MyRow()) == "row"
-        assert bridge._detect_parallelism_type(MyRep()) == "replicated"
-        assert bridge._detect_parallelism_type(torch.nn.LayerNorm(5)) == "replicated"
-        assert bridge._detect_parallelism_type(MyCustomRow()) == "row"
+        assert mapping._detect_parallelism_type(MyCol()) == "column"
+        assert mapping._detect_parallelism_type(MyRow()) == "row"
+        assert mapping._detect_parallelism_type(MyRep()) == "replicated"
+        assert mapping._detect_parallelism_type(torch.nn.LayerNorm(5)) == "replicated"
+        assert mapping._detect_parallelism_type(MyCustomRow()) == "row"
 
         with pytest.raises(ValueError):
-            bridge._detect_parallelism_type(torch.nn.Linear(5, 5))
+            mapping._detect_parallelism_type(torch.nn.Linear(5, 5))
 
 
 class TestHelperFunctions:
@@ -271,9 +271,9 @@ class TestHelperFunctions:
 
 
 class TestQKVMapping:
-    def test_to_megatron(self, mock_distributed_env, transformer_config):
+    def test_hf_to_megatron(self, mock_distributed_env, transformer_config):
         mock_distributed_env()
-        bridge = QKVMapping(megatron_param="qkv.weight", q="q.weight", k="k.weight", v="v.weight")
+        mapping = QKVMapping(megatron_param="qkv.weight", q="q.weight", k="k.weight", v="v.weight")
         weights = {
             "q": torch.randn(32, 32),
             "k": torch.randn(16, 32),
@@ -281,38 +281,38 @@ class TestQKVMapping:
         }
         megatron_module = MockModule(transformer_config, weight_shape=(64, 32))
 
-        with patch.object(bridge._tp_mapping, "to_megatron") as mock_to_megatron:
-            bridge.to_megatron(weights, megatron_module)
-            mock_to_megatron.assert_called_once()
-            merged_weight = mock_to_megatron.call_args[0][0]
+        with patch.object(mapping._tp_mapping, "hf_to_megatron") as mock_hf_to_megatron:
+            mapping.hf_to_megatron(weights, megatron_module)
+            mock_hf_to_megatron.assert_called_once()
+            merged_weight = mock_hf_to_megatron.call_args[0][0]
             assert merged_weight.shape == (64, 32)
 
 
 class TestGatedMLPMapping:
-    def test_to_megatron(self, mock_distributed_env, transformer_config):
+    def test_hf_to_megatron(self, mock_distributed_env, transformer_config):
         mock_distributed_env()
-        bridge = GatedMLPMapping(megatron_param="gated.weight", gate="gate.weight", up="up.weight")
+        mapping = GatedMLPMapping(megatron_param="gated.weight", gate="gate.weight", up="up.weight")
         weights = {
             "gate": torch.randn(128, 32),
             "up": torch.randn(128, 32),
         }
         megatron_module = MockModule(transformer_config, weight_shape=(256, 32))
 
-        with patch.object(bridge._tp_mapping, "to_megatron") as mock_to_megatron:
-            bridge.to_megatron(weights, megatron_module)
-            mock_to_megatron.assert_called_once()
-            merged_weight = mock_to_megatron.call_args[0][0]
+        with patch.object(mapping._tp_mapping, "hf_to_megatron") as mock_hf_to_megatron:
+            mapping.hf_to_megatron(weights, megatron_module)
+            mock_hf_to_megatron.assert_called_once()
+            merged_weight = mock_hf_to_megatron.call_args[0][0]
             assert merged_weight.shape == (256, 32)
 
-    def test_from_megatron(self, mock_distributed_env, transformer_config):
+    def test_megatron_to_hf(self, mock_distributed_env, transformer_config):
         mock_distributed_env()
-        bridge = GatedMLPMapping(megatron_param="gated.weight", gate="gate.weight", up="up.weight")
+        mapping = GatedMLPMapping(megatron_param="gated.weight", gate="gate.weight", up="up.weight")
         merged_weight = torch.randn(256, 32)
         megatron_module = MockModule(transformer_config, weight_shape=(256, 32))
 
-        with patch.object(bridge._tp_mapping, "from_megatron") as mock_from_megatron:
-            mock_from_megatron.return_value = {"gated.weight": merged_weight}
-            result = bridge.from_megatron(merged_weight, megatron_module)
+        with patch.object(mapping._tp_mapping, "megatron_to_hf") as mock_megatron_to_hf:
+            mock_megatron_to_hf.return_value = {"gated.weight": merged_weight}
+            result = mapping.megatron_to_hf(merged_weight, megatron_module)
 
             assert "gate.weight" in result
             assert "up.weight" in result
@@ -337,7 +337,7 @@ class TestMappingEdgeCases:
             QKVMapping("*.qkv.weight", q="*.*.q_proj.weight", k="*.k_proj.weight", v="*.v_proj.weight")
 
     def test_qkv_bias_handling(self, transformer_config):
-        """Test QKV bridge handles biases correctly."""
+        """Test QKV mapping handles biases correctly."""
         # Test bias merging
         q_bias = torch.randn(32)
         k_bias = torch.randn(16)
@@ -353,9 +353,9 @@ class TestMappingEdgeCases:
         assert torch.equal(v_bias, v_split)
 
     def test_column_parallel_bias_handling(self, mock_distributed_env, transformer_config):
-        """Test column parallel bridge handles biases correctly."""
+        """Test column parallel mapping handles biases correctly."""
         _, mock_dist = mock_distributed_env(tp_size=2, tp_rank=0)
-        bridge = ColumnParallelMapping("col.bias", "hf.bias")
+        mapping = ColumnParallelMapping("col.bias", "hf.bias")
 
         # Create a module with bias
         class MockModuleWithBias(torch.nn.Module):
@@ -374,63 +374,63 @@ class TestMappingEdgeCases:
         mock_dist.scatter.side_effect = mock_scatter
 
         # Test bias distribution
-        megatron_bias = bridge.to_megatron(hf_bias, megatron_module)
+        megatron_bias = mapping.hf_to_megatron(hf_bias, megatron_module)
         assert megatron_bias.shape == (16,)
 
     def test_broadcast_from_pp_rank_error_handling(self, mock_distributed_env):
         """Test PP broadcast error handling."""
         mock_distributed_env(pp_size=2, pp_rank=0)
-        bridge = DirectMapping("weight", "weight")
+        mapping = DirectMapping("weight", "weight")
 
         # Test when no rank has the tensor
         with patch("torch.distributed.all_gather_object") as mock_gather:
             mock_gather.side_effect = lambda output, obj, group: output.__setitem__(slice(None), [None, None])
 
             with pytest.raises(ValueError, match="Object must exist on at least one PP rank"):
-                bridge.broadcast_from_pp_rank(None)
+                mapping.broadcast_from_pp_rank(None)
 
     def test_tp_aware_unknown_module_error(self, transformer_config):
         """Test TPAwareMapping error for unknown module types."""
-        bridge = TPAwareMapping("weight", "hf.weight")
+        mapping = TPAwareMapping("weight", "hf.weight")
 
         # Create an unknown module type
         unknown_module = torch.nn.Linear(10, 10)
 
         with pytest.raises(ValueError, match="Cannot determine parallelism type"):
-            bridge._detect_parallelism_type(unknown_module)
+            mapping._detect_parallelism_type(unknown_module)
 
     def test_resolve_wildcard_patterns(self):
         """Test wildcard pattern resolution."""
         # Test DirectMapping
-        bridge = DirectMapping("layer.*.weight", "model.*.weight")
-        resolved = bridge.resolve(("0",))
+        mapping = DirectMapping("layer.*.weight", "model.*.weight")
+        resolved = mapping.resolve(("0",))
         assert resolved.megatron_param == "layer.0.weight"
         assert resolved.hf_param == "model.0.weight"
 
         # Test QKVMapping
-        qkv_bridge = QKVMapping("*.qkv.weight", q="*.q_proj.weight", k="*.k_proj.weight", v="*.v_proj.weight")
-        resolved_qkv = qkv_bridge.resolve(("layer0",))
+        qkv_mapping = QKVMapping("*.qkv.weight", q="*.q_proj.weight", k="*.k_proj.weight", v="*.v_proj.weight")
+        resolved_qkv = qkv_mapping.resolve(("layer0",))
         assert resolved_qkv.megatron_param == "layer0.qkv.weight"
         assert resolved_qkv.hf_param["q"] == "layer0.q_proj.weight"
         assert resolved_qkv.hf_param["k"] == "layer0.k_proj.weight"
         assert resolved_qkv.hf_param["v"] == "layer0.v_proj.weight"
 
         # Test GatedMLPMapping
-        gated_bridge = GatedMLPMapping("*.mlp.weight", gate="*.gate_proj.weight", up="*.up_proj.weight")
-        resolved_gated = gated_bridge.resolve(("layer1",))
+        gated_mapping = GatedMLPMapping("*.mlp.weight", gate="*.gate_proj.weight", up="*.up_proj.weight")
+        resolved_gated = gated_mapping.resolve(("layer1",))
         assert resolved_gated.megatron_param == "layer1.mlp.weight"
         assert resolved_gated.hf_param["gate"] == "layer1.gate_proj.weight"
         assert resolved_gated.hf_param["up"] == "layer1.up_proj.weight"
 
     def test_config_extraction_from_module(self, transformer_config):
         """Test config extraction from module hierarchy."""
-        bridge = DirectMapping("weight", "weight")
+        mapping = DirectMapping("weight", "weight")
 
         # Test direct config
         module_with_config = MockModule(transformer_config)
-        assert bridge._get_config(module_with_config) == transformer_config
+        assert mapping._get_config(module_with_config) == transformer_config
 
         # Test no config found
         module_without_config = torch.nn.Linear(10, 10)
         with pytest.raises(ValueError, match="Could not find config"):
-            bridge._get_config(module_without_config)
+            mapping._get_config(module_without_config)

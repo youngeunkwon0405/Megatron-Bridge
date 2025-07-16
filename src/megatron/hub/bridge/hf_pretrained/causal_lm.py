@@ -581,12 +581,12 @@ class PreTrainedCausalLM(PreTrainedBase, Generic[CausalLMType]):
             model_repr_content = f"{model_class_name} [layers={layers}, hidden_size={hidden_size}, loaded]"
         elif "config" in self.__dict__:  # Model not loaded, but config is
             config = self.config
-            model_class_name_from_config = "CausalLM"  # Default
+            model_class_name_from_hf_config = "CausalLM"  # Default
             if hasattr(config, "architectures") and config.architectures:
-                model_class_name_from_config = config.architectures[0]
+                model_class_name_from_hf_config = config.architectures[0]
             elif getattr(config, "model_type", None):
                 mt = config.model_type
-                model_class_name_from_config = f"{mt.capitalize()}Model" if mt else "CausalLM"
+                model_class_name_from_hf_config = f"{mt.capitalize()}Model" if mt else "CausalLM"
 
             details_parts = []
             if getattr(config, "num_hidden_layers", None) is not None:
@@ -597,9 +597,9 @@ class PreTrainedCausalLM(PreTrainedBase, Generic[CausalLMType]):
             details_str = ", ".join(details_parts)
             status_suffix = "not loaded"
             if details_str:
-                model_repr_content = f"{model_class_name_from_config}({details_str}) [{status_suffix}]"
+                model_repr_content = f"{model_class_name_from_hf_config}({details_str}) [{status_suffix}]"
             else:
-                model_repr_content = f"{model_class_name_from_config} [{status_suffix}]"
+                model_repr_content = f"{model_class_name_from_hf_config} [{status_suffix}]"
         else:  # Model and Config also not loaded
             model_repr_content = "AutoModelForCausalLM [not loaded]"
 

@@ -10,8 +10,8 @@ The bridge framework provides seamless bidirectional conversion between HuggingF
 from megatron.hub import CausalLMBridge
 
 # Load Llama from HuggingFace Hub and convert to Megatron
-bridge = CausalLMBridge.from_pretrained("meta-llama/Llama-3.2-1B")
-provider = bridge.to_megatron()
+bridge = CausalLMBridge.from_hf_pretrained("meta-llama/Llama-3.2-1B")
+provider = bridge.to_megatron_provider()
 
 # The provider is lazy - configure parallelism before creating models
 provider.tensor_model_parallel_size = 8
@@ -24,7 +24,7 @@ model = provider(wrap_with_ddp=False)
 
 ```python
 # Export a trained Megatron model to HuggingFace format
-bridge.save_pretrained(model, "./my-fine-tuned-llama")
+bridge.save_hf_pretrained(model, "./my-fine-tuned-llama")
 
 # Or stream weights for memory efficiency
 for name, weight in bridge.export_to_hf(model):
@@ -37,7 +37,7 @@ for name, weight in bridge.export_to_hf(model):
 from megatron.hub import AutoBridge
 
 # Automatically detect model architecture and create appropriate bridge
-bridge = AutoBridge.from_pretrained("any-huggingface/model")
+bridge = AutoBridge.from_hf_pretrained("any-supported-huggingface/model")
 ```
 
 ## Architecture Overview
@@ -52,15 +52,15 @@ The bridge framework uses a layered architecture with clear separation of concer
 │                Orchestration Layer                      │
 │            (MegatronModelBridge)                        │
 ├─────────────────────────────────────────────────────────┤
-│    Mapping Layer     │    Transformation Layer          │
-│ (MegatronStateBridge)│   (MegatronParamMapping)         │
+│    Mapping Layer         │    Transformation Layer      │
+│ (MegatronMappingRegistry)│   (MegatronParamMapping)     │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ### Core Components
 
 1. **MegatronModelBridge**: High-level orchestrator that coordinates the conversion process
-2. **MegatronStateBridge**: Registry of parameter name mappings between formats
+2. **MegatronMappingRegistry**: Registry of parameter name mappings between formats
 3. **MegatronParamMapping**: Handles weight transformations and distributed communication
 4. **CausalLMBridge**: User-friendly API for causal language models
 
@@ -71,7 +71,7 @@ The bridge framework uses a layered architecture with clear separation of concer
 The framework uses decorators to register bridge implementations, enabling automatic routing:
 
 ```python
-@MegatronModelBridge.impl(source=LlamaForCausalLM, target=GPTModel)
+@MegatronModelBridge.register_bridge(source=LlamaForCausalLM, target=GPTModel)
 class MegatronCausalLlamaBridge(MegatronModelBridge):
     def provider_bridge(self, hf_pretrained):
         # Convert HF config to Megatron provider
@@ -81,9 +81,9 @@ class MegatronCausalLlamaBridge(MegatronModelBridge):
             # ... more config mapping
         )
     
-    def state_bridge(self):
+    def mapping_registry(self):
         # Define weight mappings
-        return MegatronStateBridge(
+        return MegatronMappingRegistry(
             TPAwareMapping(
                 megatron_param="embedding.word_embeddings.weight",
                 hf_param="model.embed_tokens.weight"
@@ -174,15 +174,15 @@ Create custom param mappings for special formats:
 
 ```python
 class MyCustomMapping(MegatronParamMapping):
-    def to_megatron(self, weights, megatron_module):
+   def hf_to_megatron(self, hf_weights, megatron_module):
         # Custom transformation logic
-        transformed = my_transform(weights)
+        transformed = my_transform(hf_weights)
         # Use provided helpers for distribution
         return self.scatter_to_tp_ranks(transformed, dim=0)
-    
-    def from_megatron(self, weight, module):
+
+   def megatron_to_hf(self, megatron_weights, module):
         # Gather and inverse transform
-        gathered = self.gather_from_tp_ranks(weight, dim=0)
+        gathered = self.gather_from_tp_ranks(megatron_weights, dim=0)
         return {"custom_weight": my_inverse_transform(gathered)}
 ```
 
@@ -219,7 +219,7 @@ To add support for a new model architecture:
 
 1. **Create a Bridge Class**
    ```python
-   @MegatronModelBridge.impl(source=YourHFModel, target=YourMegatronModel)
+   @MegatronModelBridge.register_bridge(source=YourHFModel, target=YourMegatronModel)
    class YourModelBridge(MegatronModelBridge):
        pass
    ```
@@ -234,8 +234,8 @@ To add support for a new model architecture:
 
 3. **Define Weight Mappings**
    ```python
-   def state_bridge(self):
-       return MegatronStateBridge(
+   def mapping_registry(self):
+       return MegatronMappingRegistry(
            # Define all weight mappings
        )
    ```
@@ -299,12 +299,12 @@ import logging
 logging.getLogger("megatron.hub.bridge").setLevel(logging.DEBUG)
 
 # Inspect mappings
-bridge = CausalLMBridge.from_pretrained("model")
-state_bridge = bridge.state_bridge()
-print(state_bridge.get_all_mappings())
+bridge = CausalLMBridge.from_hf_pretrained("model")
+mapping_registry = bridge.mapping_registry()
+print(mapping_registry.get_all_mappings())
 
 # Verify weight shapes
-for task in bridge._build_plan_from_hf(hf_model, meg_models):
+for task in bridge._build_plan_hf_to_megatron(hf_model, meg_models):
     print(f"{task.param_name}: {task.megatron_param.shape}")
 ```
 

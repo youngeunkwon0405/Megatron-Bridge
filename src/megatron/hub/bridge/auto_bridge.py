@@ -40,18 +40,18 @@ class AutoBridge:
     Example:
         >>> from megatron.hub import AutoBridge
         >>> # Load a Llama model without knowing it needs CausalLMBridge
-        >>> bridge = AutoBridge.from_pretrained("meta-llama/Llama-3-8B")
+        >>> bridge = AutoBridge.from_hf_pretrained("meta-llama/Llama-3-8B")
         >>> # Automatically returns a CausalLMBridge instance
 
         >>> # Works with local paths too
-        >>> bridge = AutoBridge.from_pretrained("/path/to/model")
+        >>> bridge = AutoBridge.from_hf_pretrained("/path/to/model")
 
         >>> # Check if a model is supported before loading
         >>> if AutoBridge.can_handle("microsoft/phi-2"):
-        ...     bridge = AutoBridge.from_pretrained("microsoft/phi-2")
+        ...     bridge = AutoBridge.from_hf_pretrained("microsoft/phi-2")
 
         >>> # Pass additional arguments to the underlying bridge
-        >>> bridge = AutoBridge.from_pretrained(
+        >>> bridge = AutoBridge.from_hf_pretrained(
         ...     "meta-llama/Llama-2-7b-hf",
         ...     torch_dtype=torch.float16,
         ...     device_map="auto",
@@ -65,7 +65,7 @@ class AutoBridge:
     """
 
     @classmethod
-    def from_pretrained(cls, path: Union[str, Path], **kwargs) -> "BridgeProtocol":
+    def from_hf_pretrained(cls, path: Union[str, Path], **kwargs) -> "BridgeProtocol":
         """
         Load a pretrained model, automatically selecting the appropriate bridge.
 
@@ -76,7 +76,7 @@ class AutoBridge:
 
         Args:
             path: Path to model directory or HuggingFace model ID
-            **kwargs: Additional arguments passed to the bridge's from_pretrained
+            **kwargs: Additional arguments passed to the bridge's from_hf_pretrained
                 method (e.g., trust_remote_code, device_map, etc.)
 
         Returns:
@@ -95,15 +95,15 @@ class AutoBridge:
                 f"Error: {e}"
             )
 
-        bridge_cls = cls._find_bridge_for_config(config, "from_pretrained", path)
+        bridge_cls = cls._find_bridge_for_config(config, "from_hf_pretrained", path)
 
         try:
-            return bridge_cls.from_pretrained(path, **kwargs)
+            return bridge_cls.from_hf_pretrained(path, **kwargs)
         except Exception as e:
             raise ValueError(f"Failed to load model with {bridge_cls.__name__}: {e}") from e
 
     @classmethod
-    def from_config(cls, config) -> "BridgeProtocol":
+    def from_hf_config(cls, config) -> "BridgeProtocol":
         """
         Create a bridge from a HuggingFace configuration.
 
@@ -130,16 +130,16 @@ class AutoBridge:
             >>> config = AutoConfig.from_pretrained("meta-llama/Llama-3-8B")
             >>>
             >>> # Create bridge from config (no weights)
-            >>> bridge = AutoBridge.from_config(config)
+            >>> bridge = AutoBridge.from_hf_config(config)
             >>>
             >>> # Create Megatron model with random initialization
-            >>> provider = bridge.to_provider(load_weights=False)
+            >>> provider = bridge.to_megatron_provider(load_weights=False)
             >>> model = provider(wrap_with_ddp=False)
         """
-        bridge_cls = cls._find_bridge_for_config(config, "from_config")
+        bridge_cls = cls._find_bridge_for_config(config, "from_hf_config")
 
         try:
-            return bridge_cls.from_config(config)
+            return bridge_cls.from_hf_config(config)
         except Exception as e:
             raise ValueError(f"Failed to create {bridge_cls.__name__} from config: {e}") from e
 
@@ -202,7 +202,7 @@ class AutoBridge:
 
         Args:
             config: HuggingFace PretrainedConfig instance
-            method_name: Name of the method to check for ('from_config' or 'from_pretrained')
+            method_name: Name of the method to check for ('from_hf_config' or 'from_pretrained')
             path: Optional path for better error messages
 
         Returns:
@@ -264,7 +264,7 @@ class BridgeProtocol(Protocol):
         ...
 
     @classmethod
-    def from_config(cls, config: Any) -> "BridgeProtocol":
+    def from_hf_config(cls, config: Any) -> "BridgeProtocol":
         """
         Create a bridge from a HuggingFace configuration.
 
@@ -278,7 +278,7 @@ class BridgeProtocol(Protocol):
         ...
 
     @classmethod
-    def from_pretrained(cls, path: Union[str, Path], **kwargs) -> "BridgeProtocol":
+    def from_hf_pretrained(cls, path: Union[str, Path], **kwargs) -> "BridgeProtocol":
         """
         Load a pretrained model using this bridge.
 

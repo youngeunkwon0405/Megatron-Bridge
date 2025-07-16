@@ -43,7 +43,7 @@ class ConfigProtocol(Protocol):
     """Protocol defining the configuration interface for model providers."""
 
     @classmethod
-    def from_pretrained(
+    def from_hf_pretrained(
         cls: Type[T],
         pretrained_model_name_or_path: Union[str, Path],
         trust_remote_code: bool = False,
@@ -53,7 +53,7 @@ class ConfigProtocol(Protocol):
         """Load a pretrained model configuration from a directory or file."""
         ...
 
-    def save_pretrained(
+    def save_hf_pretrained(
         self,
         save_directory: Union[str, Path],
         config_format: ConfigFormat | None = None,
@@ -64,7 +64,7 @@ class ConfigProtocol(Protocol):
         ...
 
 
-def from_pretrained(
+def from_hf_pretrained(
     cls: Type[T],
     pretrained_model_name_or_path: Union[str, Path],
     trust_remote_code: bool = False,
@@ -92,10 +92,10 @@ def from_pretrained(
     Example:
         ```python
         # Load from directory (looks for config.yaml, config.json, or config.toml)
-        model = from_pretrained(MyModel, "./saved_model/")
+        model = from_hf_pretrained(MyModel, "./saved_model/")
 
         # Load from specific file
-        model = from_pretrained(MyModel, "./saved_model/config.yaml")
+        model = from_hf_pretrained(MyModel, "./saved_model/config.yaml")
 
         # With code references
         model = from_pretrained(MyModel, "./saved_model/", trust_remote_code=True)
@@ -170,7 +170,7 @@ def from_pretrained(
     return instantiate(final_config, mode=mode)
 
 
-def save_pretrained(
+def save_hf_pretrained(
     obj: Any,
     save_directory: Union[str, Path],
     config_format: ConfigFormat = "json",
@@ -190,13 +190,13 @@ def save_pretrained(
     Example:
         ```python
         # Save as JSON (default)
-        save_pretrained(model, "./saved_model/")
+        save_hf_pretrained(model, "./saved_model/")
 
         # Save as YAML
-        save_pretrained(model, "./saved_model/", config_format="yaml")
+        save_hf_pretrained(model, "./saved_model/", config_format="yaml")
 
         # Save with custom name
-        save_pretrained(model, "./saved_model/", config_name="my_config")
+        save_hf_pretrained(model, "./saved_model/", config_name="my_config")
         ```
     """
     save_path = Path(save_directory)
