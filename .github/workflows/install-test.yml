@@ -65,12 +65,12 @@ jobs:
 
           python${{ matrix.python-version }} -m venv ./venv
           . ./venv/bin/activate
-          pip install --upgrade pip
+          pip install --pre --no-cache-dir --pre --no-cache-dir --upgrade pip
 
       - name: Install project
         run: |
-          pip install torch pybind11 wheel_stub numpy
-          pip install --no-build-isolation .
+          pip install --pre --no-cache-dir torch pybind11 wheel_stub numpy
+          pip install --pre --no-cache-dir --no-build-isolation .
 
       - name: Checkout check-imports
         uses: actions/checkout@v4
@@ -111,9 +111,9 @@ jobs:
 
           . ./venv/bin/activate
 
-          pip install --upgrade pip
-          pip install torch pybind11 wheel_stub
-          pip install --no-build-isolation .$EXTRA
+          pip install --pre --no-cache-dir --upgrade pip
+          pip install --pre --no-cache-dir torch pybind11 wheel_stub
+          pip install --pre --no-cache-dir --no-build-isolation .$EXTRA
 
       - name: Checkout check-imports
         uses: actions/checkout@v4
@@ -154,7 +154,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --pre --no-cache-dir --pre --no-cache-dir --upgrade pip
 
       - name: Set up UV
         uses: astral-sh/setup-uv@v1
@@ -200,12 +200,11 @@ jobs:
           python-binary: ./venv/bin/python
 
   uv-test-bare-metal:
-    runs-on: ${{ matrix.arch }}
-    name: UV - Python ${{ matrix.python-version }} - ${{ matrix.arch == 'ubuntu-latest' && 'AMD64/Linux' || 'ARM64/Darwin' }} - No CUDA
+    runs-on: linux-amd64-cpu16
+    name: UV - Python ${{ matrix.python-version }} - 'AMD64/Linux' - No CUDA
     strategy:
       fail-fast: false
       matrix:
-        arch: ["ubuntu-latest"]
         python-version: ["3.12"]
     steps:
       - name: Checkout repository
@@ -243,7 +242,7 @@ jobs:
 
           python${{ matrix.python-version }} -m venv ./venv
           . ./venv/bin/activate
-          pip install --upgrade pip
+          pip install --pre --no-cache-dir --upgrade pip
 
       - name: Install dependencies with UV
         run: |
