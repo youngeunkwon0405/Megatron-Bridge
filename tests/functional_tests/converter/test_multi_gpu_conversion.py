@@ -46,31 +46,33 @@ class TestMultiGPUConversion:
         test_output_dir = tmp_path / test_name
         test_output_dir.mkdir(exist_ok=True)
 
-        try:
-            # Run multi_gpu_hf.py with specified parallelism configuration
-            cmd = [
-                "python",
-                "-m",
-                "torch.distributed.run",
-                "--nproc_per_node=2",
-                "--nnodes=1",
-                "-m",
-                "coverage",
-                "run",
-                "--data-file=/workspace/.coverage",
-                "--source=/workspace/",
-                "--parallel-mode",
-                "examples/models/multi_gpu_hf.py",
-                "--hf-model-id",
-                "meta-llama/Llama-3.2-1B",
-                "--output-dir",
-                str(test_output_dir),
-                "--tp",
-                str(tp),
-                "--pp",
-                str(pp),
-            ]
+        # Run multi_gpu_hf.py with specified parallelism configuration
+        cmd = [
+            "python",
+            "-m",
+            "torch.distributed.run",
+            "--nproc_per_node=2",
+            "--nnodes=1",
+            "-m",
+            "coverage",
+            "run",
+            "--data-file=/workspace/.coverage",
+            "--source=/workspace/",
+            "--parallel-mode",
+            "examples/models/multi_gpu_hf.py",
+            "--hf-model-id",
+            "meta-llama/Llama-3.2-1B",
+            "--output-dir",
+            str(test_output_dir),
+            "--tp",
+            str(tp),
+            "--pp",
+            str(pp),
+        ]
 
+        print(f"Running CMD: \n\n{' '.join(cmd)}")
+
+        try:
             result = subprocess.run(
                 cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent.parent.parent
             )

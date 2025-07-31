@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """
-This example demonstrates how to use the CausalLMBridge to perform a round-trip
+This example demonstrates how to use the AutoBridge to perform a round-trip
 conversion between a Hugging Face model and a Megatron-LM model.
 
 The process is as follows:
-1. A CausalLMBridge is initialized from a pretrained Hugging Face model
+1. An AutoBridge is initialized from a pretrained Hugging Face model
     (e.g., "meta-llama/Llama-3.2-1B"). This downloads the model from the Hub and loads it.
 2. The bridge's `to_megatron_model` method is called to get a Megatron-LM compatible model provider.
 3. The model provider is used to instantiate the Megatron-LM model.
@@ -33,7 +33,7 @@ import os
 
 from rich.console import Console
 
-from megatron.bridge import CausalLMBridge
+from megatron.bridge import AutoBridge
 from megatron.bridge.models.utils import weights_verification_table
 
 
@@ -49,7 +49,7 @@ def main(hf_model_id: str = HF_MODEL_ID, output_dir: str = None) -> None:
     else:
         save_path = model_name
 
-    bridge = CausalLMBridge.from_hf_pretrained(hf_model_id)
+    bridge = AutoBridge.from_hf_pretrained(hf_model_id)
     megatron_model = bridge.to_megatron_model(wrap_with_ddp=False)
     console.print(weights_verification_table(bridge, megatron_model))
 

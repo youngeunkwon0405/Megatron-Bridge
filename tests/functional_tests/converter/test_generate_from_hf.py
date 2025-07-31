@@ -47,33 +47,34 @@ class TestGenerateFromHF:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as tmp_file:
             output_file = tmp_file.name
 
-        try:
-            # Run generate_from_hf.py with specified parallelism configuration
-            cmd = [
-                "python",
-                "-m",
-                "torch.distributed.run",
-                "--nproc_per_node=2",
-                "--nnodes=1",
-                "-m",
-                "coverage",
-                "run",
-                "--data-file=/workspace/.coverage",
-                "--source=/workspace/",
-                "--parallel-mode",
-                "examples/models/generate_from_hf.py",
-                "--hf_model_path",
-                "meta-llama/Llama-3.2-1B",
-                "--prompt",
-                "Hello, how are you?",
-                "--max_new_tokens",
-                "10",
-                "--tp",
-                str(tp),
-                "--pp",
-                str(pp),
-            ]
+        # Run generate_from_hf.py with specified parallelism configuration
+        cmd = [
+            "python",
+            "-m",
+            "torch.distributed.run",
+            "--nproc_per_node=2",
+            "--nnodes=1",
+            "-m",
+            "coverage",
+            "run",
+            "--data-file=/workspace/.coverage",
+            "--source=/workspace/",
+            "--parallel-mode",
+            "examples/models/generate_from_hf.py",
+            "--hf_model_path",
+            "meta-llama/Llama-3.2-1B",
+            "--prompt",
+            "Hello, how are you?",
+            "--max_new_tokens",
+            "10",
+            "--tp",
+            str(tp),
+            "--pp",
+            str(pp),
+        ]
 
+        print(f"Running CMD: \n\n{' '.join(cmd)}")
+        try:
             result = subprocess.run(
                 cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent.parent.parent
             )

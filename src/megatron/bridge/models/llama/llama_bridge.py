@@ -31,11 +31,11 @@ from megatron.bridge.models.param_mapping import (
 
 
 @MegatronModelBridge.register_bridge(source=LlamaForCausalLM, target=GPTModel)
-class LlamaCausalBridge(MegatronModelBridge):
+class LlamaBridge(MegatronModelBridge):
     """
     Megatron Hub Bridge for Llama Causal LM.
 
-    As a user you would not use this bridge directly, but through `CausalBridge` or `AutoBridge`.
+    As a user you would not use this bridge directly, but through `AutoBridge`.
 
     Example:
         >>> from megatron.bridge import AutoBridge

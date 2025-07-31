@@ -7,10 +7,10 @@ The bridge framework provides seamless bidirectional conversion between HuggingF
 ### Loading a HuggingFace Model into Megatron
 
 ```python
-from megatron.bridge import CausalLMBridge
+from megatron.bridge import AutoBridge
 
 # Load Llama from HuggingFace Hub and convert to Megatron
-bridge = CausalLMBridge.from_hf_pretrained("meta-llama/Llama-3.2-1B")
+bridge = AutoBridge.from_hf_pretrained("meta-llama/Llama-3.2-1B")
 provider = bridge.to_megatron_provider()
 
 # The provider is lazy - configure parallelism before creating models
@@ -47,7 +47,7 @@ The bridge framework uses a layered architecture with clear separation of concer
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                   User API Layer                        │
-│         (CausalLMBridge, AutoBridge)                    │
+│         (AutoBridge)                                    │
 ├─────────────────────────────────────────────────────────┤
 │                Orchestration Layer                      │
 │            (MegatronModelBridge)                        │
@@ -62,7 +62,7 @@ The bridge framework uses a layered architecture with clear separation of concer
 1. **MegatronModelBridge**: High-level orchestrator that coordinates the conversion process
 2. **MegatronMappingRegistry**: Registry of parameter name mappings between formats
 3. **MegatronParamMapping**: Handles weight transformations and distributed communication
-4. **CausalLMBridge**: User-friendly API for causal language models
+4. **AutoBridge**: User-friendly API for causal language models
 
 ## Design Patterns
 
@@ -271,7 +271,7 @@ GatedMLPMapping(
 
 ## Best Practices
 
-1. **Always Use High-Level APIs**: Prefer `CausalLMBridge` or `AutoBridge` over direct bridge usage
+1. **Always Use High-Level APIs**: Prefer `AutoBridge` over direct bridge usage
 2. **Configure Before Creating**: Set parallelism parameters on providers before model creation
 3. **Handle Missing Weights**: Check for None returns in custom bridges
 4. **Test Bidirectionality**: Ensure HF→Megatron→HF preserves weights exactly
@@ -293,7 +293,7 @@ import logging
 logging.getLogger("megatron.bridge.models").setLevel(logging.DEBUG)
 
 # Inspect mappings
-bridge = CausalLMBridge.from_hf_pretrained("model")
+bridge = AutoBridge.from_hf_pretrained("model")
 mapping_registry = bridge.mapping_registry()
 print(mapping_registry.get_all_mappings())
 

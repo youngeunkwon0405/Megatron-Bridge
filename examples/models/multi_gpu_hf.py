@@ -13,11 +13,11 @@
 # limitations under the License.
 
 """
-This example demonstrates how to use the CausalLMBridge to perform a round-trip
+This example demonstrates how to use the AutoBridge to perform a round-trip
 conversion between a Hugging Face model and a Megatron-LM model on multiple GPUs.
 
 The process is as follows:
-1. A CausalLMBridge is initialized from a pretrained Hugging Face model
+1. An AutoBridge is initialized from a pretrained Hugging Face model
     (e.g., "meta-llama/Llama-3.2-1B"). This downloads the model from the Hub and loads it.
 2. The bridge's `to_megatron_provider` method is called to get a Megatron-LM compatible model provider.
 3. The model provider is configured for multi-GPU execution.
@@ -45,7 +45,7 @@ import torch
 from rich.console import Console
 from rich.table import Table
 
-from megatron.bridge import CausalLMBridge
+from megatron.bridge import AutoBridge
 from megatron.bridge.models.decorators import torchrun_main
 
 
@@ -73,7 +73,7 @@ def main(
     else:
         save_path = model_name
 
-    bridge = CausalLMBridge.from_hf_pretrained(hf_model_id)
+    bridge = AutoBridge.from_hf_pretrained(hf_model_id)
 
     model_provider = bridge.to_megatron_provider(load_weights=True)
     model_provider.tensor_model_parallel_size = tp

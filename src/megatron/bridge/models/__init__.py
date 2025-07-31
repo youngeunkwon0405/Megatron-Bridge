@@ -14,7 +14,6 @@
 
 # Import model providers for easy access
 from megatron.bridge.models.auto_bridge import AutoBridge
-from megatron.bridge.models.causal_bridge import CausalLMBridge
 from megatron.bridge.models.gpt_provider import GPTModelProvider
 from megatron.bridge.models.llama import (
     CodeLlamaModelProvider7B,
@@ -54,7 +53,6 @@ from megatron.bridge.models.t5_provider import T5ModelProvider
 
 __all__ = [
     "AutoBridge",
-    "CausalLMBridge",
     "MegatronMappingRegistry",
     "MegatronModelBridge",
     "ColumnParallelMapping",

@@ -17,7 +17,7 @@
 Megatron-HuggingFace Checkpoint Conversion Example
 
 This script demonstrates how to convert models between HuggingFace and Megatron formats
-using the CausalLMBridge import_ckpt and export_ckpt methods.
+using the AutoBridge import_ckpt and export_ckpt methods.
 
 Features:
 - Import HuggingFace models to Megatron checkpoint format
@@ -59,7 +59,7 @@ from typing import Optional
 
 import torch
 
-from megatron.bridge.models.causal_bridge import CausalLMBridge
+from megatron.bridge.models.auto_bridge import AutoBridge
 
 
 def validate_path(path: str, must_exist: bool = False) -> Path:
@@ -117,7 +117,7 @@ def import_hf_to_megatron(
 
     # Import using the convenience method
     print(f"📥 Loading HuggingFace model: {hf_model}")
-    CausalLMBridge.import_ckpt(
+    AutoBridge.import_ckpt(
         hf_model_id=hf_model,
         megatron_path=megatron_path,
         **kwargs,
@@ -175,7 +175,7 @@ def export_megatron_to_hf(
 
     # For demonstration, we'll create a bridge from a known config
     # This would typically be extracted from the checkpoint metadata
-    bridge = CausalLMBridge.from_hf_pretrained(hf_model)
+    bridge = AutoBridge.from_hf_pretrained(hf_model)
 
     # Export using the convenience method
     print("📤 Exporting to HuggingFace format...")

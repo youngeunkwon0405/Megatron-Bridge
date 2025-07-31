@@ -34,27 +34,27 @@ class TestCheckpointConversion:
         # Create temporary output directory for Megatron checkpoint
         megatron_output_dir = tmp_path / "megatron_checkpoint"
         megatron_output_dir.mkdir(exist_ok=True)
+        # Run checkpoint_conversion.py import command
+        cmd = [
+            "python",
+            "-m",
+            "coverage",
+            "run",
+            "--data-file=/workspace/.coverage",
+            "--source=/workspace/",
+            "--parallel-mode",
+            "examples/models/checkpoint_conversion.py",
+            "import",
+            "--hf-model",
+            "meta-llama/Llama-3.2-1B",
+            "--megatron-path",
+            str(megatron_output_dir),
+            "--torch-dtype",
+            "bfloat16",
+        ]
 
+        print(f"Running CMD: \n\n{' '.join(cmd)}")
         try:
-            # Run checkpoint_conversion.py import command
-            cmd = [
-                "python",
-                "-m",
-                "coverage",
-                "run",
-                "--data-file=/workspace/.coverage",
-                "--source=/workspace/",
-                "--parallel-mode",
-                "examples/models/checkpoint_conversion.py",
-                "import",
-                "--hf-model",
-                "meta-llama/Llama-3.2-1B",
-                "--megatron-path",
-                str(megatron_output_dir),
-                "--torch-dtype",
-                "bfloat16",
-            ]
-
             result = subprocess.run(
                 cmd, capture_output=True, text=True, cwd=Path(__file__).parent.parent.parent.parent
             )

@@ -14,7 +14,6 @@
 """Megatron Bridge - A component of the Megatron ecosystem."""
 
 from megatron.bridge.models.auto_bridge import AutoBridge
-from megatron.bridge.models.causal_bridge import CausalLMBridge
 from megatron.bridge.package_info import (
     __contact_emails__,
     __contact_names__,
@@ -35,5 +34,4 @@ __all__ = [
     "__repository_url__",
     "__download_url__",
     "AutoBridge",
-    "CausalLMBridge",
 ]
