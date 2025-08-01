@@ -279,6 +279,7 @@ def training_log(
     train_state = global_state.train_state
     tb_logger = global_state.tensorboard_logger
     wandb_logger = global_state.wandb_logger
+    energy_monitor = global_state.energy_monitor
     logger_config = config.logger
     train_config = config.train
 
@@ -493,6 +494,18 @@ def training_log(
         #             tb_logger.add_scalar('throughput', throughput, train_state.step)
         #         if wandb_logger:
         #             wandb_logger.log({'throughput': throughput}, train_state.step)
+
+        if energy_monitor is not None:
+            energy = (energy_monitor.lap() / total_iterations) / get_world_size_safe()
+            power = energy / elapsed_time_per_iteration
+            log_string += f" energy per GPU (J/iter/GPU): {energy:.1f} |"
+            log_string += f" power per GPU (W/GPU): {power:.1f} |"
+            if tb_logger:
+                tb_logger.add_scalar("iter-energy/gpu", energy, train_state.step)
+                tb_logger.add_scalar("power/gpu", power, train_state.step)
+            if wandb_logger:
+                wandb_logger.log({"iter-energy/gpu": energy}, train_state.step)
+                wandb_logger.log({"power/gpu": power}, train_state.step)
 
         # Decoupled_learning_rate should be not None only on first and last pipeline stage.
         log_string += f" learning rate: {learning_rate:.6E} |"
