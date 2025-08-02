@@ -13,7 +13,18 @@
 # limitations under the License.
 
 # Import model providers for easy access
-from megatron.bridge.models.auto_bridge import AutoBridge
+from megatron.bridge.models.conversion.auto_bridge import AutoBridge
+from megatron.bridge.models.conversion.mapping_registry import MegatronMappingRegistry
+from megatron.bridge.models.conversion.model_bridge import MegatronModelBridge
+from megatron.bridge.models.conversion.param_mapping import (
+    AutoMapping,
+    ColumnParallelMapping,
+    GatedMLPMapping,
+    MegatronParamMapping,
+    QKVMapping,
+    ReplicatedMapping,
+    RowParallelMapping,
+)
 from megatron.bridge.models.gpt_provider import GPTModelProvider
 from megatron.bridge.models.llama import (
     CodeLlamaModelProvider7B,
@@ -36,17 +47,6 @@ from megatron.bridge.models.llama import (
     Llama32ModelProvider1B,
     Llama32ModelProvider3B,
     LlamaModelProvider,
-)
-from megatron.bridge.models.mapping_registry import MegatronMappingRegistry
-from megatron.bridge.models.model_bridge import MegatronModelBridge
-from megatron.bridge.models.param_mapping import (
-    AutoMapping,
-    ColumnParallelMapping,
-    GatedMLPMapping,
-    MegatronParamMapping,
-    QKVMapping,
-    ReplicatedMapping,
-    RowParallelMapping,
 )
 from megatron.bridge.models.t5_provider import T5ModelProvider
 

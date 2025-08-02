@@ -26,15 +26,15 @@ from transformers import AutoConfig
 from transformers.configuration_utils import PretrainedConfig
 from typing_extensions import Unpack
 
-from megatron.bridge.models import model_bridge
+from megatron.bridge.models.conversion import model_bridge
 from megatron.bridge.models.gpt_provider import GPTModelProvider
 from megatron.bridge.models.hf_pretrained.causal_lm import PreTrainedCausalLM
-from megatron.bridge.models.model_provider_mixin import GetModelKwargs, ModelProviderMixin
-from megatron.bridge.models.state import SafeTensorsStateSource
+from megatron.bridge.models.hf_pretrained.state import SafeTensorsStateSource
+from megatron.bridge.models.model_provider import GetModelKwargs, ModelProviderMixin
 
 
 if TYPE_CHECKING:
-    from megatron.bridge.models.model_bridge import HFWeightTuple, MegatronModelBridge
+    from megatron.bridge.models.conversion.model_bridge import HFWeightTuple, MegatronModelBridge
 
 
 MegatronModelT = TypeVar("MegatronModelT", bound=MegatronModule)
@@ -816,7 +816,7 @@ class AutoBridge(Generic[MegatronModelT]):
                         f"2. Implement the required methods (provider_bridge, mapping_registry)\n"
                         f"3. Register it with @MegatronModelBridge.register_bridge decorator\n\n"
                         f"Example implementation:\n"
-                        f"  from megatron.bridge.models.model_bridge import MegatronModelBridge\n"
+                        f"  from megatron.bridge.models.conversion.model_bridge import MegatronModelBridge\n"
                         f"  from transformers import {architecture}\n"
                         f"  from megatron.core.models.gpt import GPTModel\n\n"
                         f"  @MegatronModelBridge.register_bridge(source={architecture}, target=GPTModel)\n"
@@ -828,7 +828,7 @@ class AutoBridge(Generic[MegatronModelT]):
                         f"          # Return a MegatronMappingRegistry with weight mappings\n"
                         f"          ...\n\n"
                         f"For reference implementations, see:\n"
-                        f"  • src/megatron/bridge/models/llama/llama_causal_bridge.py\n"
+                        f"  • src/megatron/bridge/models/llama/llama_bridge.py\n"
                         f"  • src/megatron/bridge/models/qwen/qwen_2_causal_bridge.py"
                     ) from None
             except AttributeError:
