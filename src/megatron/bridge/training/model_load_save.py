@@ -17,12 +17,11 @@ import os
 import socket
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Generator, Optional, Union
+from typing import Any, Generator, Literal, Optional, Union
 
 import torch
 import torch.distributed as dist
 from megatron.core import parallel_state
-from megatron.core.dist_checkpointing.strategies.torch import TorchDistLoadShardedStrategy
 from megatron.core.optimizer import OptimizerConfig
 from megatron.core.transformer import MegatronModule
 from megatron.core.utils import get_model_config
@@ -116,23 +115,23 @@ def temporary_distributed_context(backend: str = "gloo") -> Generator[None, None
 
 
 def load_megatron_model(
-    dist_ckpt_folder: Path,
-    model_cfg: Any,
+    checkpoint_path: str,
+    model_type: Optional[Literal["gpt", "mamba"]] = None,
     return_state_dict: bool = False,
     use_cpu_init: bool = True,
     skip_temp_dist_context: Optional[bool] = None,
 ) -> Union[Any, dict[str, torch.Tensor]]:
     """Load a Megatron model from a distributed checkpoint.
 
-    Initializes a minimal distributed environment and a model instance
-    to load the sharded state dict using the TorchDistLoadShardedStrategy.
+    Creates a model instance and optionally a minimal distributed environment
+    to load the model weights from `checkpoint_path` into the model.
     Automatically selects the appropriate distributed backend (Gloo for CPU, NCCL for GPU).
 
     Args:
-        dist_ckpt_folder: Path to the megatron hub distributed checkpoint directory
+        checkpoint_path: path to an MCore distributed checkpoint directory
                           (e.g., /path/to/model/checkpoints/iter_0000001).
-        model_cfg: The Megatron model configuration object (e.g., GPTConfig)
-                   corresponding to the checkpoint.
+        model_type: If the checkpoint is from MegatronLM, the model type is required. Currently,
+            only GPT and Mamba models are supported.
         return_state_dict: If True, return the state dict instead of model instance. Default: False.
         use_cpu_init: If True, use CPU initialization context for the model and Gloo backend.
                      If False, use GPU initialization and NCCL backend. Default: True.
@@ -144,6 +143,40 @@ def load_megatron_model(
         The model instance with loaded weights if return_state_dict is False,
         otherwise returns a dictionary containing the full, unsharded model state_dict.
     """
+    from megatron.bridge.training.checkpointing import (
+        _load_model_weights_from_checkpoint,
+        get_checkpoint_run_config_filename,
+        read_run_config,
+    )
+    from megatron.bridge.training.mlm_compat.arguments import _load_args_from_checkpoint, _transformer_config_from_args
+    from megatron.bridge.training.mlm_compat.model import _gpt_provider, _mamba_provider
+    from megatron.bridge.utils.instantiate_utils import instantiate
+
+    run_config_filename = get_checkpoint_run_config_filename(checkpoint_path)
+    if os.path.exists(run_config_filename):
+        run_config = read_run_config(run_config_filename)
+        mbridge_ckpt = True
+    else:
+        try:
+            mlm_args = _load_args_from_checkpoint(checkpoint_path)
+            mbridge_ckpt = False
+        except AssertionError:
+            raise RuntimeError(f"Checkpoint at {checkpoint_path} is not in a supported format.")
+
+    if mbridge_ckpt:
+        model_cfg = instantiate(run_config["model"])
+    else:
+        model_cfg = _transformer_config_from_args(mlm_args)
+        assert model_type in ("gpt", "mamba"), f"model type {model_type} not supported."
+
+    def _call_model_provider(model_cfg):
+        """Handles provider call for both MBridge and MLM providers."""
+        if mbridge_ckpt:
+            return model_cfg.provide()
+        else:
+            provider = _gpt_provider if model_type == "gpt" else _mamba_provider
+            return provider(mlm_args, model_cfg)
+
     # Auto-detect if we should skip temp dist context
     if skip_temp_dist_context is None:
         skip_temp_dist_context = dist.is_available() and dist.is_initialized()
@@ -156,18 +189,18 @@ def load_megatron_model(
 
         if use_cpu_init:
             with megatron_cpu_init_context(model_cfg):
-                model = model_cfg.provide()
+                model = _call_model_provider(model_cfg)
         else:
-            model = model_cfg.provide()
+            model = _call_model_provider(model_cfg)
 
-        strategy = TorchDistLoadShardedStrategy()
-        state_dict = strategy.load(model.sharded_state_dict(), Path(dist_ckpt_folder))
+        maybe_state_dict = _load_model_weights_from_checkpoint(
+            checkpoint_path, [model], return_state_dict=return_state_dict
+        )
 
         if return_state_dict:
             del model
-            return state_dict
+            return maybe_state_dict
         else:
-            model.load_state_dict(state_dict)
             return model
 
     if skip_temp_dist_context:
