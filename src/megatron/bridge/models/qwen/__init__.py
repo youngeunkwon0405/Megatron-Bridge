@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from megatron.bridge.models.qwen.qwen2_bridge import Qwen2Bridge
-from megatron.bridge.models.qwen.qwen3_bridge import Qwen3Bridge
+from megatron.bridge.models.qwen.qwen2_bridge import Qwen2Bridge  # noqa: F401
+from megatron.bridge.models.qwen.qwen3_bridge import Qwen3Bridge  # noqa: F401
+from megatron.bridge.models.qwen.qwen3_moe_bridge import Qwen3MoEBridge  # noqa: F401
 from megatron.bridge.models.qwen.qwen_provider import (
     Qwen2ModelProvider,
     Qwen2ModelProvider1P5B,
@@ -27,6 +28,9 @@ from megatron.bridge.models.qwen.qwen_provider import (
     Qwen3ModelProvider14B,
     Qwen3ModelProvider32B,
     Qwen3ModelProvider600M,
+    Qwen3MoEModelProvider,
+    Qwen3MoEModelProvider30B_A3B,
+    Qwen3MoEModelProvider235B_A22B,
     Qwen25ModelProvider1P5B,
     Qwen25ModelProvider3B,
     Qwen25ModelProvider7B,
@@ -57,4 +61,7 @@ __all__ = [
     "Qwen3ModelProvider8B",
     "Qwen3ModelProvider14B",
     "Qwen3ModelProvider32B",
+    "Qwen3MoEModelProvider",
+    "Qwen3MoEModelProvider30B_A3B",
+    "Qwen3MoEModelProvider235B_A22B",
 ]

@@ -332,3 +332,72 @@ class Qwen3ModelProvider32B(Qwen3ModelProvider):
     hidden_size: int = 5120
     num_attention_heads: int = 64
     ffn_hidden_size: int = 25600
+
+
+# =============================================================================
+# Qwen 3 MoE Model Provider (based on GPTProvider)
+# =============================================================================
+
+
+@dataclass
+class Qwen3MoEModelProvider(GPTModelProvider):
+    """Base provider for Qwen 3 MoE Models."""
+
+    normalization: str = "RMSNorm"
+    activation_func: Callable = F.silu
+    gated_linear_unit: bool = True
+    add_bias_linear: bool = False
+    add_qkv_bias: bool = False
+    qk_layernorm: bool = True
+    kv_channels: Optional[int] = 128
+    num_query_groups: int = 8
+    seq_length: int = 40960
+    init_method_std: int = 0.02
+    hidden_dropout: float = 0.0
+    attention_dropout: float = 0.0
+    vocab_size: int = 151936
+    share_embeddings_and_output_weights: Optional[bool] = False
+    layernorm_epsilon: float = 1e-6
+    rotary_base: float = 1000000.0
+    position_embedding_type: str = "rope"
+    autocast_dtype: torch.dtype = torch.bfloat16
+    params_dtype: torch.dtype = torch.bfloat16
+    bf16: bool = True
+
+    # MoE specific parameters
+    num_moe_experts: int = 128
+    moe_router_load_balancing_type: str = "aux_loss"
+    moe_aux_loss_coeff: float = 1e-3
+    moe_router_topk: int = 8
+    moe_router_pre_softmax: bool = False
+    moe_grouped_gemm: bool = True
+    moe_token_dispatcher_type: str = "alltoall"
+    moe_permute_fusion: bool = True
+
+
+@dataclass
+class Qwen3MoEModelProvider30B_A3B(Qwen3MoEModelProvider):
+    """
+    Provider for Qwen 3 30B-A3B: https://huggingface.co/Qwen/Qwen3-30B-A3B
+    """
+
+    num_layers: int = 48
+    hidden_size: int = 2048
+    num_attention_heads: int = 32
+    num_query_groups: int = 4
+    ffn_hidden_size: int = 6144
+    moe_ffn_hidden_size: int = 768
+
+
+@dataclass
+class Qwen3MoEModelProvider235B_A22B(Qwen3MoEModelProvider):
+    """
+    Provider for Qwen 3 235B-A22B: https://huggingface.co/Qwen/Qwen3-235B-A22B
+    """
+
+    num_layers: int = 94
+    hidden_size: int = 4096
+    num_attention_heads: int = 64
+    num_query_groups: int = 4
+    ffn_hidden_size: int = 12288
+    moe_ffn_hidden_size: int = 1536
