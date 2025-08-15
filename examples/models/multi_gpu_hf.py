@@ -94,7 +94,7 @@ def main(
         model_provider.pipeline_model_parallel_size = pp
         model_provider.expert_model_parallel_size = ep
         model_provider.initialize_model_parallel(seed=0)
-        megatron_model = model_provider(wrap_with_ddp=False)
+        megatron_model = model_provider.provide_distributed_model(wrap_with_ddp=False)
 
     # Now we can check for rank
     is_rank_0 = torch.distributed.get_rank() == 0

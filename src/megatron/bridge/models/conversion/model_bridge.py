@@ -406,7 +406,7 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
         if not isinstance(megatron_model, list):
             megatron_model = [megatron_model]
 
-        hf_to_megatron_tasks = self._build_conversion_tasks(hf_pretrained, megatron_model)
+        hf_to_megatron_tasks = self.build_conversion_tasks(hf_pretrained, megatron_model)
         hf_state_dict: Mapping[str, torch.Tensor] = hf_pretrained.state if hasattr(hf_pretrained, "state") else {}
 
         description = f"Loading from {hf_pretrained.model_name_or_path}"
@@ -443,7 +443,10 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
         return megatron_model
 
     def stream_weights_hf_to_megatron(
-        self, hf_pretrained: HFPreTrained, megatron_model: Union[MegatronModel, List[MegatronModel]]
+        self,
+        hf_pretrained: HFPreTrained,
+        megatron_model: Union[MegatronModel, List[MegatronModel]],
+        conversion_tasks: Optional[List[WeightConversionTask]] = None,
     ) -> Iterable[MegatronWeightTuple]:
         """Generator variant of load_weights_hf_to_megatron for streaming weight conversion.
 
@@ -456,6 +459,8 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
                 the weights.
             megatron_model (Union[MegatronModel, List[MegatronModel]]): Megatron model instance
                 or list of model instances to extract configuration from.
+            conversion_tasks (Optional[List[WeightConversionTask]]): Pre-built conversion tasks.
+                If not provided, tasks will be built automatically from the models.
 
         Yields:
             MegatronWeightTuple: Named tuples containing:
@@ -471,6 +476,11 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
                     print(f"Processing {weight_tuple.param_name}: {weight_tuple.weight.shape}")
                     # Custom processing logic here
 
+                # Or use pre-built conversion tasks
+                tasks = bridge.build_conversion_tasks(hf_model, megatron_model)
+                for weight_tuple in bridge.stream_weights_hf_to_megatron(hf_model, megatron_model, tasks):
+                    print(f"Processing {weight_tuple.param_name}: {weight_tuple.weight.shape}")
+
         Note:
             Only yields weights that belong to the current rank after TP/PP distribution.
 
@@ -481,7 +491,11 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
         if not isinstance(megatron_model, list):
             megatron_model = [megatron_model]
 
-        for task in self._build_conversion_tasks(hf_pretrained, megatron_model):
+        # Use provided conversion tasks or build them
+        if conversion_tasks is None:
+            conversion_tasks = self.build_conversion_tasks(hf_pretrained, megatron_model)
+
+        for task in conversion_tasks:
             # None means megatron module not on current rank, skip if this task is not going to happen
             if task.megatron_module is None:
                 continue
@@ -502,6 +516,7 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
         hf_pretrained: HFPreTrained,
         cpu: bool = True,
         show_progress: bool = True,
+        conversion_tasks: Optional[List[WeightConversionTask]] = None,
     ) -> Iterable[HFWeightTuple]:
         """Export Megatron weights to HuggingFace format.
 
@@ -523,6 +538,8 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
                 Defaults to True.
             show_progress (bool, optional): Display progress bar during export.
                 Defaults to True.
+            conversion_tasks (Optional[List[WeightConversionTask]]): Pre-built conversion tasks.
+                If not provided, tasks will be built automatically from the models.
 
         Yields:
             HFWeightTuple: Named tuples of (param_name, weight_tensor) in HF format.
@@ -532,6 +549,13 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
 
                 # Export weights
                 for name, weight in bridge.stream_weights_megatron_to_hf(megatron_model, hf_config):
+                    print(f"Exported {name}: {weight.shape}")
+
+                # Or use pre-built conversion tasks
+                tasks = bridge.build_conversion_tasks(hf_config, megatron_model)
+                for name, weight in bridge.stream_weights_megatron_to_hf(
+                    megatron_model, hf_config, conversion_tasks=tasks
+                ):
                     print(f"Exported {name}: {weight.shape}")
 
         Raises:
@@ -544,7 +568,11 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
         if not isinstance(megatron_model, list):
             megatron_model = [megatron_model]
 
-        megatron_to_hf_tasks = self._build_conversion_tasks(hf_pretrained, megatron_model)
+        # Use provided conversion tasks or build them
+        if conversion_tasks is None:
+            conversion_tasks = self.build_conversion_tasks(hf_pretrained, megatron_model)
+
+        megatron_to_hf_tasks = conversion_tasks
         model_config = unwrap_model(megatron_model)[0].config
         embeddings_are_tied = model_config.share_embeddings_and_output_weights
         for task in self._with_progress_tracking(megatron_to_hf_tasks, "Converting to HuggingFace", show_progress):
@@ -729,7 +757,7 @@ class MegatronModelBridge(Generic[HFPreTrained, ModelProviderTarget, MegatronMod
                 if hasattr(unwrapped_model, "output_layer"):
                     unwrapped_model.output_layer.weight.data.copy_(embd_weights)
 
-    def _build_conversion_tasks(
+    def build_conversion_tasks(
         self, hf_pretrained: HFPreTrained, megatron_model: List[MegatronModel]
     ) -> List[None | WeightConversionTask]:
         """Construct the conversion tasks between HF and megatron.
@@ -879,6 +907,7 @@ def stream_weights_megatron_to_hf(
     hf_pretrained: HFPreTrained,
     cpu: bool = True,
     show_progress: bool = True,
+    conversion_tasks: Optional[List[WeightConversionTask]] = None,
 ) -> Iterable[HFWeightTuple]:
     """Bridge Megatron model state to HuggingFace format."""
     ...
@@ -911,10 +940,11 @@ def register_bridge_implementation(
         hf_pretrained: HFPreTrained,
         cpu: bool = True,
         show_progress: bool = True,
+        conversion_tasks: Optional[List[WeightConversionTask]] = None,
     ) -> Iterable[HFWeightTuple]:
         bridge = bridge_class()
         return bridge.stream_weights_megatron_to_hf(
-            megatron_model, hf_pretrained, cpu=cpu, show_progress=show_progress
+            megatron_model, hf_pretrained, cpu=cpu, show_progress=show_progress, conversion_tasks=conversion_tasks
         )
 
     # Set meaningful names for debugging

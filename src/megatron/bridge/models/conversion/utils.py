@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+import functools
 import re
+import types
 from typing import List, Optional, Tuple
 
 import torch
@@ -154,6 +157,72 @@ def get_module_and_param_from_name(
 
     # If no approach works, raise an error
     raise ValueError(f"Parameter '{param_name}' not found in model at VP stage {vp_stage}")
+
+
+def remove_non_pickleables(obj, max_depth: int = 2, current_depth: int = 0):
+    """Remove non-pickleable objects from a configuration object recursively.
+
+    This utility function identifies and removes objects that cannot be pickled for
+    inter-process communication, including functions, bound methods, partial
+    functions, and other problematic callables.
+
+    Args:
+        obj: The object to clean
+        max_depth: Maximum recursion depth (default: 2)
+        current_depth: Current recursion depth (internal use)
+
+    Returns:
+        The cleaned object with non-pickleables removed
+    """
+
+    # Stop recursion if max depth reached
+    if current_depth >= max_depth:
+        return obj
+
+    # Handle None
+    if obj is None:
+        return obj
+
+    # Check if object is a problematic callable
+    if callable(obj):
+        # Allow classes/types but remove function objects, methods, partials
+        if isinstance(obj, type):
+            return obj
+        elif hasattr(obj, "__call__") and (
+            isinstance(obj, (types.FunctionType, types.MethodType, functools.partial)) or hasattr(obj, "__self__")
+        ):  # bound methods
+            return None
+
+    # Handle dataclass/object with attributes
+    if hasattr(obj, "__dict__"):
+        # Create a copy to avoid modifying the original
+        cleaned_obj = copy.copy(obj)
+
+        for attr_name in list(vars(cleaned_obj).keys()):
+            attr_value = getattr(cleaned_obj, attr_name)
+
+            # Recursively clean attribute
+            cleaned_value = remove_non_pickleables(attr_value, max_depth, current_depth + 1)
+
+            # Set the cleaned value (or None if it was removed)
+            setattr(cleaned_obj, attr_name, cleaned_value)
+
+        return cleaned_obj
+
+    # Handle lists
+    elif isinstance(obj, list):
+        return [remove_non_pickleables(item, max_depth, current_depth + 1) for item in obj]
+
+    # Handle tuples
+    elif isinstance(obj, tuple):
+        return tuple(remove_non_pickleables(item, max_depth, current_depth + 1) for item in obj)
+
+    # Handle dictionaries
+    elif isinstance(obj, dict):
+        return {key: remove_non_pickleables(value, max_depth, current_depth + 1) for key, value in obj.items()}
+
+    # For primitive types and other safe objects, return as-is
+    return obj
 
 
 def extract_sort_key(param_name: str):
