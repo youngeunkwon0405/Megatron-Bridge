@@ -28,6 +28,7 @@ from megatron.bridge.models import GPTModelProvider, T5ModelProvider
 from megatron.bridge.models.mamba.mamba_provider import MambaProvider
 from megatron.bridge.peft.base import PEFT
 from megatron.bridge.training.comm_overlap import CommOverlapConfig
+from megatron.bridge.training.deepep import validate_deepep
 from megatron.bridge.training.mixed_precision import MixedPrecisionConfig
 from megatron.bridge.training.tokenizers.config import TokenizerConfig
 from megatron.bridge.training.utils.config_utils import _ConfigContainerBase as Container
@@ -838,3 +839,6 @@ class ConfigContainer(Container):
                 f"dataset config match.\nSequence length in model config: {self.model.seq_length}, "
                 f"Sequence length in dataset config: {data_seq_length}"
             )
+
+        # Validate DeepEP is supported for the current GPU architecture
+        validate_deepep(self.model)
