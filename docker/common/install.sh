@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     *)
         echo "Unknown option: $1"
-        echo "Usage: $0 --base-image {pytorch|cuda|ubuntu} [--use-uv] [--python-version]"
+        echo "Usage: $0 --base-image {pytorch|ubuntu} [--use-uv] [--python-version]"
         exit 1
         ;;
     esac
@@ -82,7 +82,6 @@ main() {
     unset PIP_CONSTRAINT
 
     if [[ "$USE_UV" == "true" ]]; then
-        UV_ARGS=()
         if [[ "$BASE_IMAGE" == "pytorch" ]]; then
             UV_ARGS=(
                 "--no-install-package" "torch"
@@ -102,8 +101,7 @@ main() {
                 "--no-install-package" "nvidia-nccl-cu12"
             )
         else
-            UV_ARGS=(
-            )
+            UV_ARGS=()
         fi
     
         # Install uv
@@ -128,7 +126,7 @@ main() {
         . $UV_PROJECT_ENVIRONMENT/bin/activate
 
         pip install --pre --no-cache-dir --upgrade pip
-        pip install --pre --no-cache-dir torch pybind11 wheel_stub ninja wheel
+        pip install --pre --no-cache-dir torch pybind11 wheel_stub ninja wheel packaging
         pip install --pre --no-cache-dir --no-build-isolation .
     fi
 

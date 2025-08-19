@@ -52,6 +52,7 @@ jobs:
           echo "CUDA_HOME=/usr/local/cuda" | tee -a "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH" | tee -a "$GITHUB_ENV"
           echo "PATH=$HOME/.local/bin:$PATH:$CUDA_HOME/bin" | tee -a "$GITHUB_ENV"
+          echo "TORCH_CUDA_ARCH_LIST=6.0;6.1;7.0;7.5;8.0;8.6;9.0" | tee -a "$GITHUB_ENV"
 
       - name: Install project
         run: bash docker/common/install.sh --base-image ubuntu --python-version ${{ matrix.python-version }}
@@ -97,6 +98,7 @@ jobs:
           echo "CUDA_HOME=/usr/local/cuda" | tee -a "$GITHUB_ENV"
           echo "LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH" | tee -a "$GITHUB_ENV"
           echo "PATH=$HOME/.local/bin:$PATH:$CUDA_HOME/bin" | tee -a "$GITHUB_ENV"
+          echo "TORCH_CUDA_ARCH_LIST=6.0;6.1;7.0;7.5;8.0;8.6;9.0" | tee -a "$GITHUB_ENV"
 
       - name: Install megatron-bridge${{ matrix.extra-groups != '' && format('[{0}]', matrix.extra-groups) || '' }}
         shell: bash -x -e -u -o pipefail {0}
@@ -148,18 +150,19 @@ jobs:
         shell: bash
         run: bash docker/common/install.sh --base-image pytorch --use-uv
 
-      - name: Checkout check-imports
-        uses: actions/checkout@v4
-        with:
-          repository: NVIDIA-NeMo/FW-CI-templates
-          ref: v0.39.0
-          path: FW-CI-templates
+      # NGC PyTorch 25.05 has a version of triton that is broken on CPU only machines.
+      # - name: Checkout check-imports
+      #   uses: actions/checkout@v4
+      #   with:
+      #     repository: NVIDIA-NeMo/FW-CI-templates
+      #     ref: v0.39.0
+      #     path: FW-CI-templates
 
-      - name: Check imports for megatron-bridge
-        uses: ./FW-CI-templates/.github/actions/check-imports
-        with:
-          package-name: megatron.bridge
-          python-binary: ${{ env.UV_PROJECT_ENVIRONMENT }}/bin/python
+      # - name: Check imports for megatron-bridge
+      #   uses: ./FW-CI-templates/.github/actions/check-imports
+      #   with:
+      #     package-name: megatron.bridge
+      #     python-binary: ${{ env.UV_PROJECT_ENVIRONMENT }}/bin/python
 
   uv-test-bare-metal:
     needs: [pre-flight]
