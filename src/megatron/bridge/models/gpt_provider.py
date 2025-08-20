@@ -123,6 +123,8 @@ class GPTModelProvider(TransformerConfig, ModelProviderMixin[MCoreGPTModel]):
     qk_layernorm: bool = False
     fp8: Optional[str] = None
     normalization: str = "LayerNorm"
+    overlap_moe_expert_parallel_comm: bool = False
+    delay_wgrad_compute: bool = False
 
     # Multi-token prediction
     mtp_enabled: bool = False
