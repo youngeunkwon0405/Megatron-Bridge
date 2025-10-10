@@ -231,6 +231,22 @@ def parse_cli_args():
         required=False,
         default=None,
     )
+    parser.add_argument(
+        "-sharp",
+        "--use_sharp",
+        help="Enable SHARP. Disabled by default",
+        type=bool_arg,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "-ubr",
+        "--use_nccl_ub",
+        help="Enable NCCL UB. Disabled by default",
+        type=bool_arg,
+        required=False,
+        default=None,
+    )
 
     args, cli_dotlist_overrides = parser.parse_known_args()
     return args, cli_dotlist_overrides

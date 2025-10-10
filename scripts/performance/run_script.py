@@ -183,6 +183,11 @@ def main():
     pp = recipe.model.pipeline_model_parallel_size
     cp = recipe.model.context_parallel_size
 
+    if args.use_nccl_ub:
+        recipe.ddp.nccl_ub = True
+    if args.use_sharp:
+        recipe.dist_config.use_sharp = True
+
     dp = int(args.num_gpus / (tp * pp * cp))
     logger.info(f"DP: {dp}")
     if dp > 1 and pp > 1 and vp > 1:

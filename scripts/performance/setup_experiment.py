@@ -111,6 +111,7 @@ if __name__ == "__main__":
         hf_token=args.hf_token,
         nemo_home=args.nemo_home,
         wandb_key=args.wandb_key,
+        network='sharp' if args.use_sharp else None,
     )
 
     if args.model_name in ["llama31"] and args.model_size in ["405b"] and args.gpu.lower() in ["gb200"]:
@@ -118,12 +119,12 @@ if __name__ == "__main__":
             executor.env_vars["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
             executor.env_vars["CUDA_DEVICE_MAX_CONNECTIONS"] = "32"
     if args.model_name in ["deepseek"] and args.model_size in ["v3"] and args.gpu.lower() in ["gb200"]:
-        if agrs.compute_dtype == "bf16" and (not args.use_tokendrop):
+        if args.compute_dtype == "bf16" and (not args.use_tokendrop):
             executor.env_vars["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True" # OOM if not set
     del_cudnn_ln = True
     if args.gpu.lower() in ["h100"]:
         if args.model_name == "llama3" and args.model_size == "8b":
-            if args.compute_dtype == "fp8" and args.fp8_recipe == "cs":
+            if args.compute_dtype == "fp8" and args.fp8_recipe == "cs" or args.fp8_recipe == "ds":
                 executor.env_vars["NCCL_NVLS_ENABLE"] = "1"
                 executor.env_vars["NCCL_CTA_POLICY"] = "1"
                 del_cudnn_ln = False
@@ -132,13 +133,22 @@ if __name__ == "__main__":
             if args.compute_dtype == "bf16" or (args.compute_dtype == "fp8" and args.fp8_recipe == "cs"):
                 del_cudnn_ln = False
         if args.model_name == ["llama31"] and args.model_size == "405b":
-            if args.compute_dtype == "fp8" and args.fp8_recipe == "cs":
+            if args.compute_dtype == "fp8" and args.fp8_recipe == "cs" or args.fp8_recipe == "ds":
+                executor.env_vars["NCCL_NVLS_ENABLE"] = "1"
+                executor.env_vars["NCCL_CTA_POLICY"] = "1"
                 del_cudnn_ln = False
     if del_cudnn_ln:
         if "NVTE_NORM_FWD_USE_CUDNN" in executor.env_vars:
             executor.env_vars.pop("NVTE_NORM_FWD_USE_CUDNN")
         if "NVTE_NORM_BWD_USE_CUDNN" in executor.env_vars:
             executor.env_vars.pop("NVTE_NORM_BWD_USE_CUDNN")
+    
+    if args.use_nccl_ub:
+        executor.env_vars["NCCL_NVLS_ENABLE"] = "1"
+        executor.env_vars["NCCL_CTA_POLICY"] = "1"
+        executor.env_vars["CUDA_DEVICE_MAX_CONNECTIONS"] = "32"
+        executor.env_vars["NCCL_DEBUG"] = "INFO"
+        executor.env_vars["NCCL_DEBUG_SUBSYS"] = "TUNING,ENV"
 
     target_script_args = [
         "--config_file",
