@@ -23,7 +23,7 @@ ConfigContainer:
     gradient_accumulation_fusion: false
 
   train:
-    train_iters: 25
+    train_iters: 150
     eval_iters: 0
 
   rerun_state_machine:
